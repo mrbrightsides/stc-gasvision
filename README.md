@@ -1,4 +1,4 @@
-# 🔥 GasVision by SmartWisataChain
+# 🔥 GasVision by SmartWisataChain [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.16763535.svg)](https://doi.org/10.5281/zenodo.16763535)
 
 Pantau biaya gas transaksi blockchain testnet-mu secara real-time dan transparan.
 
