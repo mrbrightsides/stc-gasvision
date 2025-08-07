@@ -5,14 +5,14 @@ import pandas as pd
 
 import streamlit as st
 
-LOGO_URL = "https://i.imgur.com/FybPGaM.png"
+LOGO_URL = "https://i.imgur.com/7j5aq4l.png"
 
 col1, col2 = st.columns([1, 4])
 with col1:
     st.image(LOGO_URL, width=60)
 with col2:
     st.markdown("""
-        ## 🔥 GasVision by SmartWisataChain  
+        ## 🔥 GasVision by SmartTourismChain  
         _Pantau biaya gas transaksi blockchain testnet-mu secara real-time dan transparan_
     """)
 
