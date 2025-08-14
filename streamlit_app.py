@@ -6,6 +6,27 @@ from io import StringIO
 from datetime import datetime
 from tools.simulator import TX_PRESETS, GAS_SPEED_PRESET, simulate_fee_table
 
+st.markdown("""
+    <style>
+    /* Sidebar styling */
+    section[data-testid="stSidebar"] {
+        background-color: #111111;
+        color: white;
+    }
+
+    /* Sidebar text */
+    section[data-testid="stSidebar"] * {
+        color: white;
+    }
+
+    /* Optional: Biar link juga terang */
+    section[data-testid="stSidebar"] a {
+        color: #1abfff;
+    }
+
+    </style>
+""", unsafe_allow_html=True)
+
 # === Konversi format CSV ke format STC Analytics ===
 def convert_to_stc_format(df_raw):
     df = df_raw.copy()
