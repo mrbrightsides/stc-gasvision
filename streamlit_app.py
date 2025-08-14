@@ -6,6 +6,31 @@ import pandas as pd
 import streamlit as st
 from simulator import simulate_fee_table, TX_PRESETS, GAS_SPEED_PRESET
 
+import pandas as pd
+from io import StringIO
+from datetime import datetime
+
+def convert_to_stc_format(df_raw):
+    df = df_raw.copy()
+
+    # Add missing columns
+    df['timestamp'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    df['contract'] = df.get('to', '')
+    df['function_name'] = 'manual-entry'
+    df['block_number'] = df['block']
+    df['gas_price_wei'] = df['gas_price_gwei'] * 1e9
+    df['cost_eth'] = df['estimated_fee_eth']
+    df['cost_idr'] = df['estimated_fee_idr']
+    df['meta_json'] = '{}'
+
+    # Select and reorder columns
+    columns_needed = [
+        'timestamp','network','tx_hash','contract','function_name',
+        'block_number','gas_used','gas_price_wei','cost_eth','cost_idr','meta_json'
+    ]
+    df_final = df[columns_needed]
+    return df_final
+
 # === Sidebar Info ===
 st.sidebar.title("ℹ️ About")
 st.sidebar.markdown("""
@@ -130,3 +155,14 @@ st.markdown("""
 
     Semakin banyak hash yang Anda kumpulkan, semakin jelas pola biaya dan efisiensinya. 🚀
     """)
+
+df_converted = convert_to_stc_format(df_original)
+
+csv = df_converted.to_csv(index=False).encode('utf-8')
+st.download_button(
+    label="⬇️ Download for STC Analytics",
+    data=csv,
+    file_name="stc_analytics_ready.csv",
+    mime="text/csv"
+)
+
