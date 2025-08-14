@@ -82,9 +82,7 @@ st.write(f"💱 Kurs saat ini (ETH to IDR): Rp {ETH_TO_IDR:,}")
 st.title("📊 Gas Usage Tracker")
 tx_hash = st.text_input("Masukkan Tx Hash", placeholder="Contoh: 0xabc123...")
 st.markdown("""
-🔎 **Tips**: Masukkan hash transaksi dari testnet explorer seperti  
-[GoerliScan](https://goerli.etherscan.io), [SepoliaScan](https://sepolia.etherscan.io),  
-atau [PolygonScan](https://mumbai.polygonscan.com) untuk melihat estimasi biaya gas.
+🔎 **Tips**: Masukkan hash transaksi dari testnet explorer seperti [GoerliScan](https://goerli.etherscan.io), [SepoliaScan](https://sepolia.etherscan.io), atau [PolygonScan](https://mumbai.polygonscan.com) untuk melihat estimasi biaya gas.
 """)
 
 df_original = None  # Define globally for later use
