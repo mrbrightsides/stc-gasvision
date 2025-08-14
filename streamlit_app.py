@@ -28,7 +28,7 @@ with col1:
     st.image(LOGO_URL, width=60)
 with col2:
     st.markdown("""
-        ## 🔥 GasVision by SmartTourismChain
+        ## STC GasVision
     """)
 
 # === Daftar RPC URL dari berbagai testnet ===
