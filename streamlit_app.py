@@ -179,7 +179,7 @@ with st.expander("Simulasikan Biaya Gas Manual"):
 
     with col2:
         selected_networks = st.multiselect(
-            "Pilih Jaringan", list(RPC_URLS.keys()), default=["Sepolia", "Goerli"]
+            "Pilih Jaringan", list(RPC_URLS.keys()), default=["Sepolia"]
         )
 
     if st.button("🔍 Simulasikan Biaya"):
