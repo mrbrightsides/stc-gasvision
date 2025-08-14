@@ -10,7 +10,7 @@ from simulator import simulate_fee_table, TX_PRESETS, GAS_SPEED_PRESET
 st.sidebar.title("ℹ️ About")
 st.sidebar.markdown("""
 STC GasVision memantau biaya gas transaksi di berbagai testnet (Sepolia, Goerli,
-Polygon Mumbai, Arbitrum Sepolia) dan mengonversi biaya gas ke Rupiah.
+Polygon Mumbai, Arbitrum Sepolia) dan mengonversinya ke Rupiah.
 
 **Sumber data**
 - 🔌 Realtime data jaringan & eksekusi transaksi: **Infura RPC**
