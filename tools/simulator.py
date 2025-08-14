@@ -1,6 +1,6 @@
-
-import requests
+import streamlit as st
 import pandas as pd
+import requests
 
 # === Preset Gas Used per Transaction Type ===
 TX_PRESETS = {
@@ -12,14 +12,12 @@ TX_PRESETS = {
     "Add Liquidity": 270000,
 }
 
-# === Preset Gwei per Speed Level ===
 GAS_SPEED_PRESET = {
     "Standard": 20,
     "Fast": 50,
     "Instant": 100
 }
 
-# === Simulated Networks (default: pakai ETH semua)
 SIMULATED_NETWORKS = {
     "Sepolia": "ETH",
     "Goerli": "ETH",
@@ -27,7 +25,6 @@ SIMULATED_NETWORKS = {
     "Arbitrum Sepolia": "ETH"
 }
 
-# === Get ETH to IDR rate from CoinGecko
 def get_eth_to_idr():
     try:
         url = "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=idr"
@@ -36,18 +33,16 @@ def get_eth_to_idr():
     except:
         return 60000000  # fallback
 
-# === Kalkulasi biaya gas
 def calculate_gas_fees(gas_used, gas_price_gwei, eth_to_idr):
-    fee_eth = (gas_used * gas_price_gwei) * 1e-9  # Gwei → ETH
+    fee_eth = (gas_used * gas_price_gwei) * 1e-9
     fee_idr = fee_eth * eth_to_idr
     return fee_eth, fee_idr
 
-# === Simulasikan hasil ke DataFrame
 def simulate_fee_table(tx_type, gas_used_input, speed_level, selected_networks):
     eth_to_idr = get_eth_to_idr()
     gas_price_gwei = GAS_SPEED_PRESET[speed_level]
-
     rows = []
+
     for network in selected_networks:
         token = SIMULATED_NETWORKS[network]
         fee_eth, fee_idr = calculate_gas_fees(gas_used_input, gas_price_gwei, eth_to_idr)
