@@ -45,6 +45,14 @@ Polygon Mumbai, Arbitrum Sepolia) dan mengonversinya ke Rupiah.
 
 📊 Upload hasil CSV ke [**STC Analytics**](https://stc-analytics.streamlit.app)
 untuk eksplorasi lanjutan biaya transaksi.
+
+---
+
+#### 🙌 Dukungan & kontributor
+- ⭐ **Star / Fork**: [GitHub repo](https://github.com/mrbrightsides/stc-gasvision/tree/main)
+- Built with 💙 by [ELPEEF](https://elpeef.com)
+
+Versi UI: v1.0 • Streamlit + DuckDB • Theme Dark
 """)
 
 # === Logo dan Header ===
