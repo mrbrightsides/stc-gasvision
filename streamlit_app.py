@@ -133,7 +133,7 @@ if tx_hash:
         # === Download original CSV
         csv = df_original.to_csv(index=False).encode('utf-8')
         st.download_button(
-            label="⬇️ Export ke CSV",
+            label="⬇️ Unduh CSV sesuai detail transaksi",
             data=csv,
             file_name=f"gas_tracker_{network.lower()}.csv",
             mime='text/csv'
@@ -160,7 +160,7 @@ if df_original is not None:
     df_converted = convert_to_stc_format(df_original)
     csv_converted = df_converted.to_csv(index=False).encode('utf-8')
     st.download_button(
-        label="⬇️ Download for STC Analytics",
+        label="⬇️ Unduh untuk analisa di STC Analytics",
         data=csv_converted,
         file_name="stc_analytics_ready.csv",
         mime="text/csv"
