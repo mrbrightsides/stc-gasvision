@@ -6,6 +6,21 @@ import pandas as pd
 import streamlit as st
 from simulator import simulate_fee_table, TX_PRESETS, GAS_SPEED_PRESET
 
+# === Sidebar Info ===
+st.sidebar.title("ℹ️ Tentang GasVision")
+st.sidebar.markdown("""
+GasVision adalah alat untuk memantau biaya gas transaksi blockchain di berbagai testnet
+(Sepolia, Goerli, Polygon Mumbai, Arbitrum Sepolia) secara real-time.
+
+📥 **Unduh CSV** hasil pemantauan untuk setiap hash transaksi.
+
+📊 **Analisis lanjutan**:
+Unggah file CSV Anda ke [**STC Analytics**](https://stc-analytics.streamlit.app) untuk melihat
+pola biaya, tren, dan perbandingan antar transaksi secara interaktif.
+
+---
+""")
+
 LOGO_URL = "https://i.imgur.com/7j5aq4l.png"
 
 col1, col2 = st.columns([1, 4])
