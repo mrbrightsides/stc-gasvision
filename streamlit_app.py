@@ -6,6 +6,8 @@ from io import StringIO
 from datetime import datetime
 from tools.simulator import TX_PRESETS, GAS_SPEED_PRESET, simulate_fee_table
 
+st.set_page_config(page_title="STC GasVision", layout="wide")
+
 st.markdown("""
     <style>
     /* === DARK MODE SIDEBAR === */
