@@ -52,7 +52,7 @@ untuk eksplorasi lanjutan biaya transaksi.
 - ⭐ **Star / Fork**: [GitHub repo](https://github.com/mrbrightsides/stc-gasvision/tree/main)
 - Built with 💙 by [ELPEEF](https://elpeef.com)
 
-Versi UI: v1.0 • Streamlit + DuckDB • Theme Dark
+Versi UI: v1.0 • Streamlit • Theme Dark
 """)
 
 # === Logo dan Header ===
