@@ -40,7 +40,6 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
-st.sidebar.subheader("📘 STC GasVision — Testnet Tracker")
 
 # === Konversi format CSV ke format STC Analytics ===
 def convert_to_stc_format(df_raw):
