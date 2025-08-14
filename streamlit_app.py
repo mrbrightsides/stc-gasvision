@@ -170,6 +170,11 @@ if df_original is not None:
 st.markdown("---")
 st.header("🧪 Gas Fee Simulator")
 
+st.markdown("""
+Ingin tahu berapa biaya gas dari berbagai jaringan tanpa menunggu transaksi nyata?  
+Gunakan simulasi berikut untuk membandingkan biaya berdasarkan jenis transaksi dan kecepatan.
+""")
+
 with st.expander("Simulasikan Biaya Gas Manual"):
     col1, col2 = st.columns(2)
     with col1:
@@ -186,4 +191,13 @@ with st.expander("Simulasikan Biaya Gas Manual"):
         df_simulasi = simulate_fee_table(tx_type, gas_used, speed, selected_networks)
         st.success("Simulasi berhasil dilakukan.")
         st.dataframe(df_simulasi, use_container_width=True)
+
+if st.button("🔍 Simulasikan Biaya"):
+    df_simulasi = simulate_fee_table(tx_type, gas_used, speed, selected_networks)
+    st.success("Simulasi berhasil dilakukan.")
+    st.dataframe(df_simulasi, use_container_width=True)
+
+    # Tambahkan tombol unduh CSV di sini
+    csv_simulasi = df_simulasi.to_csv(index=False).encode("utf-8")
+    st.download_button("⬇️ Unduh Hasil Simulasi", csv_simulasi, "simulasi_biaya_gas.csv", "text/csv")
 
