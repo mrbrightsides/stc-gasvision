@@ -28,8 +28,7 @@ with col1:
     st.image(LOGO_URL, width=60)
 with col2:
     st.markdown("""
-        ## 🔥 GasVision by SmartTourismChain  
-        _Pantau biaya gas transaksi blockchain testnet-mu secara real-time dan transparan_
+        ## 🔥 GasVision by SmartTourismChain
     """)
 
 # === Daftar RPC URL dari berbagai testnet ===
