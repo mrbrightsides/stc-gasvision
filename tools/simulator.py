@@ -56,3 +56,6 @@ def simulate_fee_table(tx_type, gas_used_input, speed_level, selected_networks):
         })
 
     return pd.DataFrame(rows)
+    csv_simulasi = df_simulasi.to_csv(index=False).encode("utf-8")
+    st.download_button("⬇️ Unduh Hasil Simulasi", csv_simulasi, "simulasi_biaya_gas.csv", "text/csv")
+
