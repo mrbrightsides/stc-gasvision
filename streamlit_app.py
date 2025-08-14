@@ -9,15 +9,17 @@ from simulator import simulate_fee_table, TX_PRESETS, GAS_SPEED_PRESET
 # === Sidebar Info ===
 st.sidebar.title("ℹ️ Tentang GasVision")
 st.sidebar.markdown("""
-GasVision adalah alat untuk memantau biaya gas transaksi blockchain di berbagai testnet
-(Sepolia, Goerli, Polygon Mumbai, Arbitrum Sepolia) secara real-time.
+GasVision memantau biaya gas transaksi di berbagai testnet (Sepolia, Goerli,
+Polygon Mumbai, Arbitrum Sepolia) dan mengonversi biaya ke Rupiah.
 
-📥 **Unduh CSV** hasil pemantauan untuk setiap hash transaksi.
+**Sumber data**
+- 🔌 Realtime data jaringan & eksekusi transaksi: **Infura RPC**
+- 💱 Kurs ETH → IDR diperbarui otomatis (realtime) via **Infura**,  
+  dengan fallback penyedia harga eksternal bila endpoint utama tidak tersedia.
+- 🧠 Cache kurs ±10 menit untuk stabilitas & rate-limit.
 
-📊 **Analisis lanjutan**:
-Unggah file CSV Anda ke [**STC Analytics**](https://stc-analytics.streamlit.app) untuk melihat
-pola biaya, tren, dan perbandingan antar transaksi secara interaktif.
-
+📥 Unduh CSV untuk setiap hash transaksi.  
+📊 Untuk visualisasi pola & tren biaya, unggah CSV Anda ke **[STC Analytics](https://stc-analytics.streamlit.app)**.
 ---
 """)
 
