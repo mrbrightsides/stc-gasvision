@@ -4,6 +4,7 @@ import requests
 import pandas as pd
 
 import streamlit as st
+from simulator import simulate_fee_table, TX_PRESETS, GAS_SPEED_PRESET
 
 LOGO_URL = "https://i.imgur.com/7j5aq4l.png"
 
@@ -15,8 +16,6 @@ with col2:
         ## 🔥 GasVision by SmartTourismChain  
         _Pantau biaya gas transaksi blockchain testnet-mu secara real-time dan transparan_
     """)
-
-
 
 # === Daftar RPC URL dari berbagai testnet ===
 RPC_URLS = {
