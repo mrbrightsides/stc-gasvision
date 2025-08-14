@@ -101,5 +101,17 @@ if tx_hash:
             mime='text/csv'
         )
 
+    st.markdown("""
+    ### 🔍 Tips untuk Analisis Lanjutan
+    File CSV yang Anda unduh hanya berisi satu transaksi.  
+    Untuk mendapatkan visualisasi yang lebih komprehensif:
+
+    - Lakukan beberapa kali input transaksi dengan hash berbeda
+    - Gabungkan semua file CSV Anda
+    - Lanjutkan analisis melalui dashboard 👉 [**STC Analytics**](https://stc-analytics.streamlit.app)
+
+    Semakin banyak hash yang Anda kumpulkan, semakin jelas pola biaya dan efisiensinya. 🚀
+    """)
+
     except Exception as e:
         st.error(f"Gagal mengambil data transaksi: {e}")
