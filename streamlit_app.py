@@ -166,10 +166,11 @@ if df_original is not None:
         mime="text/csv"
     )
 
-elif page == "Gas Simulator":
-    st.title("⛽ Gas Fee Simulator")
+# === Separator UI ===
+st.markdown("---")
+st.header("🧪 Gas Fee Simulator")
 
-    # --- Input Form ---
+with st.expander("Simulasikan Biaya Gas Manual"):
     col1, col2 = st.columns(2)
     with col1:
         tx_type = st.selectbox("Jenis Transaksi", list(TX_PRESETS.keys()))
@@ -178,15 +179,11 @@ elif page == "Gas Simulator":
 
     with col2:
         selected_networks = st.multiselect(
-            "Pilih Jaringan untuk Simulasi",
-            ["Sepolia", "Goerli", "Polygon Mumbai", "Arbitrum Sepolia"],
-            default=["Sepolia", "Goerli"]
+            "Pilih Jaringan", list(RPC_URLS.keys()), default=["Sepolia", "Goerli"]
         )
 
-    if st.button("Simulasikan"):
-        df_result = simulate_fee_table(tx_type, gas_used, speed, selected_networks)
-        st.success("Simulasi selesai!")
-        st.dataframe(df_result, use_container_width=True)
-
-        st.download_button("📥 Download CSV", df_result.to_csv(index=False), file_name="gas_simulation.csv")
+    if st.button("🔍 Simulasikan Biaya"):
+        df_simulasi = simulate_fee_table(tx_type, gas_used, speed, selected_networks)
+        st.success("Simulasi berhasil dilakukan.")
+        st.dataframe(df_simulasi, use_container_width=True)
 
