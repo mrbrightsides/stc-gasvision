@@ -101,7 +101,10 @@ if tx_hash:
             mime='text/csv'
         )
 
-    st.markdown("""
+    except Exception as e:
+        st.error(f"Gagal mengambil data transaksi: {e}")
+
+st.markdown("""
     ### 🔍 Tips untuk Analisis Lanjutan
     File CSV yang Anda unduh hanya berisi satu transaksi.  
     Untuk mendapatkan visualisasi yang lebih komprehensif:
@@ -112,6 +115,3 @@ if tx_hash:
 
     Semakin banyak hash yang Anda kumpulkan, semakin jelas pola biaya dan efisiensinya. 🚀
     """)
-
-    except Exception as e:
-        st.error(f"Gagal mengambil data transaksi: {e}")
