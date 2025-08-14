@@ -214,7 +214,7 @@ if df_original is not None:
 
 # === Separator UI ===
 st.markdown("---")
-st.header("🧪 Gas Fee Simulator")
+st.header("📟 Gas Fee Simulator")
 
 st.markdown("""
 Ingin tahu berapa biaya gas dari berbagai jaringan tanpa menunggu transaksi nyata?  
