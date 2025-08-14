@@ -192,12 +192,5 @@ with st.expander("Simulasikan Biaya Gas Manual"):
         st.success("Simulasi berhasil dilakukan.")
         st.dataframe(df_simulasi, use_container_width=True)
 
-if st.button("🔍 Simulasikan Biaya"):
-    df_simulasi = simulate_fee_table(tx_type, gas_used, speed, selected_networks)
-    st.success("Simulasi berhasil dilakukan.")
-    st.dataframe(df_simulasi, use_container_width=True)
-
-    # Tambahkan tombol unduh CSV di sini
-    csv_simulasi = df_simulasi.to_csv(index=False).encode("utf-8")
-    st.download_button("⬇️ Unduh Hasil Simulasi", csv_simulasi, "simulasi_biaya_gas.csv", "text/csv")
-
+        csv_simulasi = df_simulasi.to_csv(index=False).encode("utf-8")
+        st.download_button("⬇️ Unduh Hasil Simulasi", csv_simulasi, "simulasi_biaya_gas.csv", "text/csv")
