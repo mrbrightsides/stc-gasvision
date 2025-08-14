@@ -17,8 +17,7 @@ Polygon Mumbai, Arbitrum Sepolia) dan mengonversinya ke Rupiah.
 - 💱 Kurs ETH → IDR diperbarui otomatis (realtime) via **Infura**,  
   dengan fallback penyedia harga eksternal bila endpoint utama tidak tersedia.
 - 🧠 Cache kurs ±10 menit untuk stabilitas & rate-limit.
-
-📥 Unduh CSV untuk setiap hash transaksi.
+- 📥 Unduh CSV untuk setiap hash transaksi.
 
 📊 Untuk visualisasi pola & tren biaya, unggah CSV Anda ke **[STC Analytics](https://stc-analytics.streamlit.app)**.
 ---
