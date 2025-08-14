@@ -76,7 +76,7 @@ if tx_hash:
 
         st.subheader("🧮 Biaya Gas")
         st.write(f"**Estimated Fee:** {estimated_fee_eth:.8f} ETH")
-        st.write(f"**Biaya Gas (Rp):** Rp {estimated_fee_idr:,.2f}")
+        st.write(f"**Dalam Rupiah:** Rp {estimated_fee_idr:,.2f}")
 
         # === Export ke CSV ===
         data = {
