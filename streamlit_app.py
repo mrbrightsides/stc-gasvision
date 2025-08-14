@@ -2,63 +2,60 @@ import streamlit as st
 from web3 import Web3
 import requests
 import pandas as pd
-
-import streamlit as st
-from simulator import simulate_fee_table, TX_PRESETS, GAS_SPEED_PRESET
-
-import pandas as pd
 from io import StringIO
 from datetime import datetime
+from simulator import simulate_fee_table, TX_PRESETS, GAS_SPEED_PRESET
 
+# === Konversi format CSV ke format STC Analytics ===
 def convert_to_stc_format(df_raw):
     df = df_raw.copy()
 
-    # Add missing columns
     df['timestamp'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    df['contract'] = df.get('to', '')
+    df['contract'] = df.get('To', '')
     df['function_name'] = 'manual-entry'
-    df['block_number'] = df['block']
-    df['gas_price_wei'] = df['gas_price_gwei'] * 1e9
-    df['cost_eth'] = df['estimated_fee_eth']
-    df['cost_idr'] = df['estimated_fee_idr']
+    df['block_number'] = df['Block']
+    df['gas_price_wei'] = df['Gas Price (Gwei)'] * 1e9
+    df['cost_eth'] = df['Estimated Fee (ETH)']
+    df['cost_idr'] = df['Estimated Fee (Rp)']
     df['meta_json'] = '{}'
 
-    # Select and reorder columns
+    df.rename(columns={
+        'Network': 'network',
+        'Tx Hash': 'tx_hash',
+        'Gas Used': 'gas_used'
+    }, inplace=True)
+
     columns_needed = [
         'timestamp','network','tx_hash','contract','function_name',
         'block_number','gas_used','gas_price_wei','cost_eth','cost_idr','meta_json'
     ]
-    df_final = df[columns_needed]
-    return df_final
+    return df[columns_needed]
 
-# === Sidebar Info ===
+# === Sidebar ===
 st.sidebar.title("ℹ️ About")
 st.sidebar.markdown("""
 STC GasVision memantau biaya gas transaksi di berbagai testnet (Sepolia, Goerli,
 Polygon Mumbai, Arbitrum Sepolia) dan mengonversinya ke Rupiah.
 
 **Sumber data**
-- 🔌 Realtime data jaringan & eksekusi transaksi: **Infura RPC**
-- 💱 Kurs ETH → IDR diperbarui otomatis (realtime) via **Infura**,  
-  dengan fallback penyedia harga eksternal bila endpoint utama tidak tersedia.
-- 🧠 Cache kurs ±10 menit untuk stabilitas & rate-limit.
-- 📥 Unduh CSV untuk setiap hash transaksi.
+- 🔌 Realtime data jaringan: **Infura RPC**
+- 💱 Kurs ETH → IDR via **Infura**, dengan fallback ke provider lain
+- 🧠 Kurs dicache ±10 menit
+- 📥 Export CSV untuk analisis
 
-📊 Untuk visualisasi pola & tren biaya, unggah CSV Anda ke **[STC Analytics](https://stc-analytics.streamlit.app)**.
----
+📊 Upload hasil CSV ke [**STC Analytics**](https://stc-analytics.streamlit.app)
+untuk eksplorasi lanjutan biaya transaksi.
 """)
 
+# === Logo dan Header ===
 LOGO_URL = "https://i.imgur.com/7j5aq4l.png"
-
 col1, col2 = st.columns([1, 4])
 with col1:
     st.image(LOGO_URL, width=60)
 with col2:
-    st.markdown("""
-        ## STC GasVision
-    """)
+    st.markdown("## STC GasVision")
 
-# === Daftar RPC URL dari berbagai testnet ===
+# === RPC URLs ===
 RPC_URLS = {
     "Sepolia": "https://sepolia.infura.io/v3/f8d248f838ec4f12b0f01efd2b238206",
     "Goerli": "https://goerli.infura.io/v3/f8d248f838ec4f12b0f01efd2b238206",
@@ -66,11 +63,10 @@ RPC_URLS = {
     "Arbitrum Sepolia": "https://arbitrum-sepolia.infura.io/v3/f8d248f838ec4f12b0f01efd2b238206"
 }
 
-# === Pilih jaringan ===
 network = st.selectbox("🧭 Pilih Jaringan Testnet", list(RPC_URLS.keys()))
 web3 = Web3(Web3.HTTPProvider(RPC_URLS[network]))
 
-# === Kurs ETH ke IDR ===
+# === ETH to IDR ===
 @st.cache_data(ttl=600)
 def get_eth_to_idr():
     try:
@@ -86,7 +82,8 @@ st.write(f"💱 Kurs saat ini (ETH to IDR): Rp {ETH_TO_IDR:,}")
 st.title("📊 Gas Usage Tracker")
 tx_hash = st.text_input("Masukkan Tx Hash", placeholder="Contoh: 0xabc123...")
 
-# === Tampilkan hasil jika ada hash ===
+df_original = None  # Define globally for later use
+
 if tx_hash:
     try:
         tx = web3.eth.get_transaction(tx_hash)
@@ -100,7 +97,7 @@ if tx_hash:
         status = '✅ Success' if receipt['status'] == 1 else '❌ Failed'
         status_csv = 'Success' if receipt['status'] == 1 else 'Failed'
 
-        # === Tampilan Streamlit ===
+        # === Show result
         st.subheader("📄 Detail Transaksi")
         st.write(f"**Network:** {network}")
         st.write(f"**From:** {tx['from']}")
@@ -118,7 +115,7 @@ if tx_hash:
         st.write(f"**Estimated Fee:** {estimated_fee_eth:.8f} ETH")
         st.write(f"**Dalam Rupiah:** Rp {estimated_fee_idr:,.2f}")
 
-        # === Export ke CSV ===
+        # === DataFrame
         data = {
             "Network": [network],
             "Tx Hash": [tx['hash'].hex()],
@@ -131,9 +128,10 @@ if tx_hash:
             "Estimated Fee (Rp)": [float(estimated_fee_idr)],
             "Status": [status_csv]
         }
-        df = pd.DataFrame(data)
-        csv = df.to_csv(index=False).encode('utf-8')
+        df_original = pd.DataFrame(data)
 
+        # === Download original CSV
+        csv = df_original.to_csv(index=False).encode('utf-8')
         st.download_button(
             label="⬇️ Export ke CSV",
             data=csv,
@@ -144,25 +142,26 @@ if tx_hash:
     except Exception as e:
         st.error(f"Gagal mengambil data transaksi: {e}")
 
+# === Tips & link
 st.markdown("""
-    ### 🔍 Tips untuk Analisis Lanjutan
-    File CSV yang Anda unduh hanya berisi satu transaksi.  
-    Untuk mendapatkan visualisasi yang lebih komprehensif:
+### 🔍 Tips untuk Analisis Lanjutan
+CSV ini hanya satu transaksi.  
+Untuk melihat tren dan pola biaya:
 
-    - Lakukan beberapa kali input transaksi dengan hash berbeda
-    - Gabungkan semua file CSV Anda
-    - Lanjutkan analisis melalui dashboard 👉 [**STC Analytics**](https://stc-analytics.streamlit.app)
+- Coba input beberapa hash
+- Gabungkan semua file
+- Upload ke 👉 [**STC Analytics**](https://stc-analytics.streamlit.app)
 
-    Semakin banyak hash yang Anda kumpulkan, semakin jelas pola biaya dan efisiensinya. 🚀
-    """)
+Semakin banyak hash, semakin akurat analisismu. 🚀
+""")
 
-df_converted = convert_to_stc_format(df_original)
-
-csv = df_converted.to_csv(index=False).encode('utf-8')
-st.download_button(
-    label="⬇️ Download for STC Analytics",
-    data=csv,
-    file_name="stc_analytics_ready.csv",
-    mime="text/csv"
-)
-
+# === Export to STC Analytics format
+if df_original is not None:
+    df_converted = convert_to_stc_format(df_original)
+    csv_converted = df_converted.to_csv(index=False).encode('utf-8')
+    st.download_button(
+        label="⬇️ Download for STC Analytics",
+        data=csv_converted,
+        file_name="stc_analytics_ready.csv",
+        mime="text/csv"
+    )
