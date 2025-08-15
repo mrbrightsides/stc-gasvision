@@ -22,8 +22,10 @@ def fetch_tx_cached(network: str, tx_hash: str):
     API = st.secrets.get("ETHERSCAN_API_KEY") or os.getenv("ETHERSCAN_API_KEY")
     return fetch_tx_raw_any(tx_hash, API, network=network)
 
-if st.button("🧹 Clear cache transaksi"):
-    fetch_tx_cached.clear()
+with st.sidebar:
+    if st.button("♻️ Refresh kurs (clear cache)"):
+        get_eth_idr_rate_cached.clear()
+        st.success("Kurs akan di-refresh pada request berikutnya.")
 
 st.set_page_config(
     page_title="STC GasVision",
