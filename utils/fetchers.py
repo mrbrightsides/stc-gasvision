@@ -128,7 +128,7 @@ def fetch_tx_raw_any(
 ) -> dict:
     network_key = (network or "sepolia").lower().strip()
     base_map = {
-        "sepolia": "https://api.etherscan.io/v2/api?chainid=1",
+        "sepolia": "https://api.etherscan.io/v2/api?chainid=11155111",
         "mainnet": "https://api.etherscan.io",
     }
     if network_key not in base_map:
