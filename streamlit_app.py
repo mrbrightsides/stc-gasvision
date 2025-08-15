@@ -212,7 +212,6 @@ st.write(f"💱 Kurs saat ini (ETH to IDR): Rp {ETH_TO_IDR:,}")
 
 # === Input Tx Hash ===
 st.title("⛽ Gas Usage Tracker")
-tx_hash = st.text_input("Masukkan Tx Hash", placeholder="Contoh: 0xabc123...")
 
 st.markdown("""
 🔎 **Tips**: Masukkan hash transaksi dari testnet explorer seperti
@@ -220,27 +219,25 @@ st.markdown("""
 atau [PolygonScan](https://mumbai.polygonscan.com) untuk melihat estimasi biaya gas.
 """)
 
-df_original = None
-raw = None
-row = None
-
-# --- SINGLE HASH ---
+# --- SINGLE HASH (satu input + tombol hapus) ---
 c_inp, c_btn = st.columns([1, 0.18])
 
 with c_inp:
-    tx_hash = st.text_input(
+    st.text_input(
         "Masukkan Tx Hash",
         key="tx_hash_input",
-        placeholder="0x..."
+        placeholder="0x...",
     )
 
 with c_btn:
     st.write("")  # spacer
-    if st.session_state.get("tx_hash_input"):      # hanya tampil kalau ada isi
-        if st.button("🧽 Hapus", key="btn_clear_single", use_container_width=True):
-            st.session_state["tx_hash_input"] = ""   # kosongkan input
-            st.session_state.pop("single_raw", None)
-            st.rerun()
+    clear_disabled = not bool(st.session_state.get("tx_hash_input"))
+    if st.button("🧽 Hapus", key="btn_clear_single", use_container_width=True, disabled=clear_disabled):
+        st.session_state["tx_hash_input"] = ""      # kosongkan input
+        st.session_state.pop("single_raw", None)    # bersihkan hasil lama (opsional)
+        st.rerun()
+
+tx_hash = (st.session_state.get("tx_hash_input") or "").strip()
 
 if tx_hash:
     try:
