@@ -7,6 +7,24 @@ from tools.simulator import TX_PRESETS, GAS_SPEED_PRESET, simulate_fee_table
 from utils.fetchers import fetch_tx_raw, to_standard_row
 from web3 import Web3
 
+import streamlit as st
+from utils.fetchers import fetch_eth_idr_rate
+
+@st.cache_data(ttl=600)  # cache selama 10 menit
+def get_eth_idr_rate_cached():
+    return fetch_eth_idr_rate()
+
+from utils.fetchers import fetch_tx_raw_any
+import os
+
+@st.cache_data(ttl=300)
+def fetch_tx_cached(network: str, tx_hash: str):
+    API = st.secrets.get("ETHERSCAN_API_KEY") or os.getenv("ETHERSCAN_API_KEY")
+    return fetch_tx_raw_any(tx_hash, API, network=network)
+
+if st.button("🧹 Clear cache transaksi"):
+    fetch_tx_cached.clear()
+
 st.set_page_config(
     page_title="STC GasVision",
     page_icon="⛽",
