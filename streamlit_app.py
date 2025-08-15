@@ -224,6 +224,24 @@ df_original = None
 raw = None
 row = None
 
+# --- SINGLE HASH ---
+c_inp, c_btn = st.columns([1, 0.18])
+
+with c_inp:
+    tx_hash = st.text_input(
+        "Masukkan Tx Hash",
+        key="tx_hash_input",
+        placeholder="0x..."
+    )
+
+with c_btn:
+    st.write("")  # spacer
+    if st.session_state.get("tx_hash_input"):      # hanya tampil kalau ada isi
+        if st.button("🧽 Hapus", key="btn_clear_single", use_container_width=True):
+            st.session_state["tx_hash_input"] = ""   # kosongkan input
+            st.session_state.pop("single_raw", None)
+            st.rerun()
+
 if tx_hash:
     try:
         # Ambil data via Etherscan (sudah termasuk WIB + decode function via 4byte)
