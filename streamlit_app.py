@@ -1,5 +1,4 @@
 import streamlit as st
-from web3 import Web3
 import requests
 import pandas as pd
 from io import StringIO
@@ -162,65 +161,93 @@ st.write(f"💱 Kurs saat ini (ETH to IDR): Rp {ETH_TO_IDR:,}")
 # === Input Tx Hash ===
 st.title("⛽ Gas Usage Tracker")
 tx_hash = st.text_input("Masukkan Tx Hash", placeholder="Contoh: 0xabc123...")
+
 st.markdown("""
-🔎 **Tips**: Masukkan hash transaksi dari testnet explorer seperti [GoerliScan](https://goerli.etherscan.io), [SepoliaScan](https://sepolia.etherscan.io), atau [PolygonScan](https://mumbai.polygonscan.com) untuk melihat estimasi biaya gas.
+🔎 **Tips**: Masukkan hash transaksi dari testnet explorer seperti
+[GoerliScan](https://goerli.etherscan.io), [SepoliaScan](https://sepolia.etherscan.io),
+atau [PolygonScan](https://mumbai.polygonscan.com) untuk melihat estimasi biaya gas.
 """)
 
-df_original = None  # Define globally for later use
+df_original = None
+raw = None
+row = None
 
 if tx_hash:
     try:
-        tx = web3.eth.get_transaction(tx_hash)
-        receipt = web3.eth.get_transaction_receipt(tx_hash)
+        # Ambil data via Etherscan (sudah termasuk WIB + decode function via 4byte)
+        raw = fetch_tx_raw(network, tx_hash)
+        row = to_standard_row(raw)
 
-        gas_price_gwei = web3.from_wei(tx['gasPrice'], 'gwei')
-        gas_used = receipt['gasUsed']
-        estimated_fee_wei = tx['gasPrice'] * gas_used
-        estimated_fee_eth = web3.from_wei(estimated_fee_wei, 'ether')
-        estimated_fee_idr = float(estimated_fee_eth) * ETH_TO_IDR
-        status = '✅ Success' if receipt['status'] == 1 else '❌ Failed'
-        status_csv = 'Success' if receipt['status'] == 1 else 'Failed'
-
-        # === Show result
+        # === Detail Transaksi
         st.subheader("📄 Detail Transaksi")
-        st.write(f"**Network:** {network}")
-        st.write(f"**From:** {tx['from']}")
-        st.write(f"**To:** {tx['to']}")
-        st.write(f"**Hash:** {tx['hash'].hex()}")
-        st.write(f"**Gas Price:** {gas_price_gwei:.2f} Gwei")
-        st.write(f"**Gas Limit:** {tx['gas']}")
+        st.write(f"**Network:** {row['Network']}")
+        st.write(f"**From:** {raw.get('from_addr','')}")
+        st.write(f"**To:** {raw.get('to_addr','')}")
+        st.write(f"**Hash:** {row['Tx Hash']}")
+        st.write(f"**Function:** {row['Function'] or '-'}")
 
+        # === Receipt ringkas
         st.subheader("🧾 Receipt")
-        st.write(f"**Block:** {receipt['blockNumber']}")
-        st.write(f"**Gas Used:** {gas_used}")
-        st.write(f"**Status:** {status}")
+        st.write(f"**Block:** {row['Block']}")
+        st.write(f"**Gas Used:** {row['Gas Used']}")
+        st.write(f"**Status:** {'✅ Success' if row['Status']=='Success' else '❌ Failed'}")
 
-        st.subheader("🧮 Biaya Gas")
-        st.write(f"**Estimated Fee:** {estimated_fee_eth:.8f} ETH")
-        st.write(f"**Dalam Rupiah:** Rp {estimated_fee_idr:,.2f}")
+        # === Ringkasan Biaya
+        st.subheader("💰 Ringkasan Biaya")
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            st.metric("Estimated Fee (ETH)", f"{row['Estimated Fee (ETH)']:.8f}")
+        with c2:
+            st.metric("Dalam Rupiah", f"Rp {row['Estimated Fee (Rp)']:,.2f}")
+        with c3:
+            st.metric("Gas Price (Gwei)", f"{row['Gas Price (Gwei)']:.2f}")
 
-        # === DataFrame
+        # === Waktu blok (UTC & WIB)
+        utc = raw.get("timestamp", "")
+        wib = raw.get("timestamp_local", "")
+        if wib:
+            st.caption(f"🕒 Waktu blok — UTC: **{utc}** • WIB: **{wib}**")
+        else:
+            st.caption(f"🕒 Waktu blok (UTC): **{utc}**")
+
+        # === DataFrame “detail transaksi” (apa adanya untuk user)
         data = {
-            "Network": [network],
-            "Tx Hash": [tx['hash'].hex()],
-            "From": [tx['from']],
-            "To": [tx['to']],
-            "Block": [receipt['blockNumber']],
-            "Gas Used": [gas_used],
-            "Gas Price (Gwei)": [float(gas_price_gwei)],
-            "Estimated Fee (ETH)": [float(estimated_fee_eth)],
-            "Estimated Fee (Rp)": [float(estimated_fee_idr)],
-            "Status": [status_csv]
+            "Timestamp": [row["Timestamp"]],
+            "Network": [row["Network"]],
+            "Tx Hash": [row["Tx Hash"]],
+            "From": [raw.get("from_addr","")],
+            "To": [raw.get("to_addr","")],
+            "Contract": [row["Contract"]],
+            "Function": [row["Function"]],
+            "Block": [row["Block"]],
+            "Gas Used": [row["Gas Used"]],
+            "Gas Price (Gwei)": [row["Gas Price (Gwei)"]],
+            "Estimated Fee (ETH)": [row["Estimated Fee (ETH)"]],
+            "Estimated Fee (Rp)": [row["Estimated Fee (Rp)"]],
+            "Status": [row["Status"]],
         }
         df_original = pd.DataFrame(data)
 
-        # === Download original CSV
-        csv = df_original.to_csv(index=False).encode('utf-8')
+        # === Download: CSV sesuai detail transaksi
         st.download_button(
-            label="⬇️ Unduh CSV sesuai detail transaksi",
-            data=csv,
+            "⬇️ Unduh CSV sesuai detail transaksi",
+            data=df_original.to_csv(index=False).encode("utf-8"),
             file_name=f"gas_tracker_{network.lower()}.csv",
-            mime='text/csv'
+            mime="text/csv",
+            use_container_width=True
+        )
+
+        # === Download: CSV siap STC Analytics (kolom standar)
+        df_converted = df_original[[
+            'Timestamp','Network','Tx Hash','Contract','Function','Block',
+            'Gas Used','Gas Price (Gwei)','Estimated Fee (ETH)','Estimated Fee (Rp)','Status'
+        ]].copy()
+        st.download_button(
+            "⬇️ Unduh untuk analisa di STC Analytics",
+            data=df_converted.to_csv(index=False).encode("utf-8"),
+            file_name="stc_analytics_ready.csv",
+            mime="text/csv",
+            use_container_width=True
         )
 
     except Exception as e:
@@ -249,36 +276,6 @@ if df_original is not None:
         file_name="stc_analytics_ready.csv",
         mime="text/csv"
     )
-
-# Ringkasan biaya (ETH & IDR)
-st.subheader("💰 Ringkasan Biaya")
-col1, col2, col3 = st.columns([1,1,1])
-with col1:
-    st.metric("Estimated Fee (ETH)", f"{row['Estimated Fee (ETH)']:.8f}")
-with col2:
-    st.metric("Dalam Rupiah", f"Rp {row['Estimated Fee (Rp)']:,.2f}")
-with col3:
-    st.metric("Gas Price (Gwei)", f"{row['Gas Price (Gwei)']:.2f}")
-
-# Detail waktu (UTC & WIB)
-utc = raw.get("timestamp", "")
-wib = raw.get("timestamp_local", "")
-if wib:
-    st.caption(f"🕒 Waktu blok — UTC: **{utc}** • WIB: **{wib}**")
-else:
-    st.caption(f"🕒 Waktu blok (UTC): **{utc}**")
-
-# Tampilkan nama fungsi (hasil decode 4byte)
-fn = row.get("Function", "")
-if fn:
-    st.caption(f"🧩 Function: **{fn}**")
-
-with st.expander("ℹ️ Sumber & Catatan"):
-    st.markdown("""
-- Data transaksi: **Etherscan (Sepolia Proxy API)**
-- Kurs ETH → IDR: **CoinGecko**
-- Nama fungsi: **4byte.directory** (fallback ke selector `0x....` bila ABI tidak tersedia)
-""")
 
 # === Separator UI ===
 st.markdown("---")
