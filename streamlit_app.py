@@ -225,8 +225,9 @@ if tx_hash:
 
         # === Ringkasan Biaya
         st.subheader("💰 Ringkasan Biaya")
-        cost_eth = raw["cost_eth"]                # sudah dihitung di fetcher
-        cost_idr_val = (eth_idr_rate or 0) * cost_eth if eth_idr_rate else 0.0
+        eth_idr_rate = get_eth_idr_rate_cached()
+        cost_eth = float(raw.get("cost_eth", 0.0))
+        cost_idr_val = (eth_idr_rate or 0) * cost_eth
         rupiah_str = format_rupiah(cost_idr_val)
 
         c1, c2, c3 = st.columns(3)
@@ -237,9 +238,9 @@ if tx_hash:
         with c3:
             st.metric("Gas Price (Gwei)", f"{raw.get('gas_price_gwei', 0):.2f}")
 
-        gas_price_wei = raw.get("gas_price_wei", 0)
+        gas_price_wei = int(raw.get("gas_price_wei", 0) or 0)
         if gas_price_wei == 0:
-            st.info("🟢 Gasless / Sponsored Tx — `gasPrice = 0` (biaya gas disubsidi/di-sponsor).")
+            st.info("🟢 Gasless / Sponsored Tx — `gasPrice = 0` (biaya gas disubsidi).")
 
         # === Waktu blok (UTC & WIB)
         utc = raw.get("timestamp", "")
