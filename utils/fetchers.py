@@ -5,6 +5,12 @@ import requests
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
+from functools import lru_cache
+
+@lru_cache(maxsize=8192)
+def _lookup_4byte_cached(method_id: str, timeout=6) -> str:
+    return lookup_4byte(method_id, timeout=timeout)
+
 # =========================
 # Helpers
 # =========================
@@ -222,7 +228,7 @@ def fetch_tx_raw_any(
         function_name = "ETH Transfer"
     else:
         method_id = input_data[:10]  # 0x + 8 hex
-        guessed = lookup_4byte(method_id) or ""
+        guessed = _lookup_4byte_cached(method_id) or ""
         function_name = guessed if guessed else method_id
 
     # === Status (success/failed) ===
