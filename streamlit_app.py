@@ -48,59 +48,60 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # === Konversi format CSV ke format STC Analytics ===
-from datetime import datetime
-import json
 import pandas as pd
+from datetime import datetime
+
+COLUMNS_UPPER = [
+    'Timestamp','Network','Tx Hash','Contract','Function','Block',
+    'Gas Used','Gas Price (Gwei)','Estimated Fee (ETH)','Estimated Fee (Rp)','Status'
+]
 
 def convert_to_stc_format(df_raw: pd.DataFrame) -> pd.DataFrame:
     df = df_raw.copy()
 
-    # --- rename sesuai skema STC Analytics ---
-    df.rename(columns={
-        'Timestamp': 'timestamp',
-        'Network': 'network',
-        'Tx Hash': 'tx_hash',
-        'Contract': 'contract',
-        'Function': 'function_name',
-        'Block': 'block_number',
-        'Gas Used': 'gas_used',
-        'Estimated Fee (ETH)': 'cost_eth',
-        'Estimated Fee (Rp)': 'cost_idr'
-    }, inplace=True)
+    # Normalisasi nama kolom berbagai kemungkinan
+    rename_map = {
+        'timestamp':'Timestamp', 'Timestamp':'Timestamp',
+        'network':'Network', 'Network':'Network',
+        'tx_hash':'Tx Hash', 'Tx Hash':'Tx Hash', 'TxHash':'Tx Hash', 'Hash':'Tx Hash',
+        'contract':'Contract', 'Contract':'Contract', 'To':'Contract',
+        'function_name':'Function', 'Function':'Function',
+        'block_number':'Block', 'Block':'Block',
+        'gas_used':'Gas Used', 'Gas Used':'Gas Used',
+        'Gas Price (Gwei)':'Gas Price (Gwei)', 'gas_price_gwei':'Gas Price (Gwei)',
+        'gas_price_wei':'gas_price_wei',  # kita konversi di bawah jika ada
+        'cost_eth':'Estimated Fee (ETH)', 'Estimated Fee (ETH)':'Estimated Fee (ETH)',
+        'cost_idr':'Estimated Fee (Rp)', 'Estimated Fee (Rp)':'Estimated Fee (Rp)',
+        'status':'Status', 'Status':'Status'
+    }
+    df.rename(columns={k:v for k,v in rename_map.items() if k in df.columns}, inplace=True)
 
-    # --- tipe data aman ---
-    if 'Gas Price (Gwei)' in df.columns:
-        df['gas_price_wei'] = pd.to_numeric(df['Gas Price (Gwei)'], errors='coerce').fillna(0) * 1e9
-    else:
-        df['gas_price_wei'] = 0
+    # Isi kolom wajib yang belum ada
+    if 'Timestamp' not in df.columns:
+        df['Timestamp'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    if 'Function' not in df.columns:
+        df['Function'] = 'manual-entry'
+    if 'Status' not in df.columns:
+        df['Status'] = 'Unknown'
 
-    for col in ['block_number', 'gas_used', 'cost_eth', 'cost_idr']:
+    # Gas Price: prioritas pakai kolom Gwei; kalau tidak ada tapi ada Wei -> konversi
+    if 'Gas Price (Gwei)' not in df.columns:
+        if 'gas_price_wei' in df.columns:
+            df['Gas Price (Gwei)'] = pd.to_numeric(df['gas_price_wei'], errors='coerce').fillna(0) / 1e9
+        else:
+            df['Gas Price (Gwei)'] = 0
+
+    # Pastikan numerik aman
+    for col in ['Block','Gas Used','Gas Price (Gwei)','Estimated Fee (ETH)','Estimated Fee (Rp)']:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
 
-    # --- meta_json: ambil Status kalau ada, paksa ke string & sanitize ---
-    if 'Status' in df_raw.columns:
-        # ke string + ganti nan/None/NaT jadi 'Unknown'
-        status_series = df_raw['Status'].astype(str).replace({'nan': 'Unknown', 'None': 'Unknown', 'NaT': 'Unknown'})
-        def _safe_meta(s: str) -> str:
-            try:
-                return json.dumps({"status": s}, ensure_ascii=False)
-            except Exception:
-                return '{"status":"Unknown"}'
-        df['meta_json'] = status_series.map(_safe_meta)
-    else:
-        df['meta_json'] = ['{"status":"Unknown"}'] * len(df)
-
-    columns_needed = [
-        'timestamp','network','tx_hash','contract','function_name',
-        'block_number','gas_used','gas_price_wei','cost_eth','cost_idr','meta_json'
-    ]
-    # Pastikan semua kolom ada
-    for c in columns_needed:
+    # Pastikan semua kolom ada, lalu urutkan sesuai target
+    for c in COLUMNS_UPPER:
         if c not in df.columns:
-            df[c] = '' if c in ['timestamp','network','tx_hash','contract','function_name','meta_json'] else 0
+            df[c] = '' if c in ['Network','Tx Hash','Contract','Function','Timestamp','Status'] else 0
 
-    return df[columns_needed]
+    return df[COLUMNS_UPPER]
     
 # === Sidebar ===
 st.sidebar.title("ℹ️ About")
