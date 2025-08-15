@@ -3,6 +3,27 @@ import requests
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
+def lookup_4byte(method_id: str, timeout=6) -> str:
+    """Coba tebak nama fungsi dari 4byte.directory; fallback ke method_id."""
+    if not method_id:
+        return ""
+    try:
+        r = requests.get(
+            "https://www.4byte.directory/api/v1/signatures/",
+            params={"hex_signature": method_id},
+            timeout=timeout,
+        )
+        if r.status_code == 200:
+            results = r.json().get("results", [])
+            if results:
+                # pilih entri terbaru
+                results.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+                sig = results[0].get("text_signature", "")
+                return (sig.split("(")[0] if sig else method_id)
+    except Exception:
+        pass
+    return method_id
+
 # ===== Helper API =====
 def _etherscan_get(base, params, timeout=8):
     """Call Etherscan-compatible API endpoint."""
@@ -162,25 +183,4 @@ def to_standard_row(raw: dict) -> dict:
         "Wallet From": raw.get("from_addr", ""),
         "Wallet To": raw.get("to_addr", ""),
     }
-
-def lookup_4byte(method_id: str, timeout=6) -> str:
-    """Coba tebak nama fungsi dari 4byte.directory; fallback ke method_id."""
-    if not method_id:
-        return ""
-    try:
-        r = requests.get(
-            "https://www.4byte.directory/api/v1/signatures/",
-            params={"hex_signature": method_id},
-            timeout=timeout,
-        )
-        if r.status_code == 200:
-            results = r.json().get("results", [])
-            if results:
-                # pilih entri terbaru
-                results.sort(key=lambda x: x.get("created_at", ""), reverse=True)
-                sig = results[0].get("text_signature", "")
-                return (sig.split("(")[0] if sig else method_id)
-    except Exception:
-        pass
-    return method_id
 
