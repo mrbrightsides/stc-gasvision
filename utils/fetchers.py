@@ -1,6 +1,7 @@
 import os
 import requests
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 # ===== Helper API =====
 def _etherscan_get(base, params, timeout=8):
@@ -37,51 +38,67 @@ def fetch_eth_idr_rate(timeout=6):
         return 0.0
 
 # ===== Ambil transaksi dari Sepolia / jaringan lain =====
-def fetch_tx_raw_any(tx_hash: str, api_key: str, network: str = "sepolia", eth_idr_rate: float | None = None) -> dict:
-    """Ambil detail transaksi (raw) + biaya dalam ETH & IDR."""
-    network = network.lower().strip()
+def fetch_tx_raw_any(
+    tx_hash: str,
+    api_key: str,
+    network: str = "sepolia",
+    eth_idr_rate: float | None = None
+) -> dict:
+    """Ambil detail transaksi (raw) + biaya dalam ETH & IDR. Tambah WIB & decode function."""
+    network_key = (network or "sepolia").lower().strip()
 
     base_map = {
         "sepolia": "https://api-sepolia.etherscan.io/api",
         "mainnet": "https://api.etherscan.io/api",
     }
-    if network not in base_map:
+    if network_key not in base_map:
         raise ValueError(f"Network belum didukung: {network}")
 
-    base = base_map[network]
+    if not api_key:
+        raise RuntimeError("ETHERSCAN_API_KEY belum diset di secrets/env")
+
+    base = base_map[network_key]
 
     # --- TX data ---
-    tx = _etherscan_get(base, {
+    tx_resp = _etherscan_get(base, {
         "module": "proxy",
         "action": "eth_getTransactionByHash",
         "txhash": tx_hash,
         "apikey": api_key
-    }).get("result")
-
+    })
+    tx = tx_resp.get("result")
     if not tx:
         raise RuntimeError("Transaksi tidak ditemukan")
 
     # --- Receipt ---
-    rcpt = _etherscan_get(base, {
+    rcpt_resp = _etherscan_get(base, {
         "module": "proxy",
         "action": "eth_getTransactionReceipt",
         "txhash": tx_hash,
         "apikey": api_key
-    }).get("result", {})
+    })
+    rcpt = rcpt_resp.get("result", {})
 
-    # --- Block ---
-    blk = _etherscan_get(base, {
+    # --- Block (untuk timestamp) ---
+    blk_resp = _etherscan_get(base, {
         "module": "proxy",
         "action": "eth_getBlockByNumber",
-        "tag": tx["blockNumber"],
+        "tag": tx.get("blockNumber", "0x0"),
         "boolean": "true",
         "apikey": api_key
-    }).get("result", {})
+    })
+    blk = blk_resp.get("result", {})
 
-    # === Konversi data ===
+    # === Waktu: UTC + WIB ===
     ts_unix = _hex_to_int(blk.get("timestamp"))
-    timestamp = datetime.fromtimestamp(ts_unix, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    ts_utc = datetime.fromtimestamp(ts_unix, tz=timezone.utc)
+    timestamp_utc = ts_utc.strftime("%Y-%m-%d %H:%M:%S")
+    try:
+        timestamp_wib = ts_utc.astimezone(ZoneInfo("Asia/Jakarta")).strftime("%Y-%m-%d %H:%M:%S")
+    except Exception:
+        timestamp_wib = ""
 
+    # === Biaya ===
     gas_used = _hex_to_int(rcpt.get("gasUsed", "0x0"))
     eff_price = rcpt.get("effectiveGasPrice") or tx.get("gasPrice") or "0x0"
     gas_price_wei = _hex_to_int(eff_price)
@@ -92,16 +109,20 @@ def fetch_tx_raw_any(tx_hash: str, api_key: str, network: str = "sepolia", eth_i
         eth_idr_rate = fetch_eth_idr_rate()
     cost_idr = cost_eth * float(eth_idr_rate or 0)
 
+    # === Function name ===
     input_data = tx.get("input", "0x")
     method_id = input_data[:10] if input_data and input_data != "0x" else ""
+    function_name = lookup_4byte(method_id) if method_id else ""
+
     status = "Success" if _hex_to_int(rcpt.get("status", "0x0")) == 1 else "Failed"
 
     return {
-        "timestamp": timestamp,
-        "network": network.capitalize(),
+        "timestamp": timestamp_utc,             # untuk CSV standar (UTC)
+        "timestamp_local": timestamp_wib,       # untuk UI (WIB)
+        "network": network_key.capitalize(),
         "tx_hash": tx_hash,
         "contract": tx.get("to") or "",
-        "function_name": method_id,  # nanti kita upgrade decode signature
+        "function_name": function_name or method_id,  # prefer nama fungsi, fallback selector
         "block_number": _hex_to_int(tx.get("blockNumber", "0x0")),
         "gas_used": gas_used,
         "gas_price_gwei": gas_price_gwei,
@@ -141,3 +162,25 @@ def to_standard_row(raw: dict) -> dict:
         "Wallet From": raw.get("from_addr", ""),
         "Wallet To": raw.get("to_addr", ""),
     }
+
+def lookup_4byte(method_id: str, timeout=6) -> str:
+    """Coba tebak nama fungsi dari 4byte.directory; fallback ke method_id."""
+    if not method_id:
+        return ""
+    try:
+        r = requests.get(
+            "https://www.4byte.directory/api/v1/signatures/",
+            params={"hex_signature": method_id},
+            timeout=timeout,
+        )
+        if r.status_code == 200:
+            results = r.json().get("results", [])
+            if results:
+                # pilih entri terbaru
+                results.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+                sig = results[0].get("text_signature", "")
+                return (sig.split("(")[0] if sig else method_id)
+    except Exception:
+        pass
+    return method_id
+
