@@ -214,11 +214,16 @@ def fetch_tx_raw_any(
     cost_idr = cost_eth * float(eth_idr_rate or 0)
 
     # === Function name ===
-    input_data = tx.get("input", "0x")
-    method_id = input_data[:10] if input_data and input_data != "0x" else ""
-    function_name = lookup_4byte(method_id) if method_id else ""
+    input_data = (tx.get("input") or "0x").strip()
 
-    status = "Success" if _hex_to_int(rcpt.get("status", "0x0")) == 1 else "Failed"
+    if input_data.lower() == "0x":
+        # pure ETH transfer
+        method_id = ""
+        function_name = "ETH Transfer"
+    else:
+        method_id = input_data[:10]
+        guessed = lookup_4byte(method_id) or ""
+        function_name = guessed if guessed else method_id
 
     return {
         "timestamp": timestamp_utc,
