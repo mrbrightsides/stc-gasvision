@@ -221,23 +221,28 @@ def fetch_tx_raw_any(
         method_id = ""
         function_name = "ETH Transfer"
     else:
-        method_id = input_data[:10]
+        method_id = input_data[:10]  # 0x + 8 hex
         guessed = lookup_4byte(method_id) or ""
         function_name = guessed if guessed else method_id
 
+    # === Status (success/failed) ===
+    rcpt_status_hex = rcpt.get("status") or "0x0"
+    tx_status = "Success" if _hex_to_int(rcpt_status_hex, 0) == 1 else "Failed"
+
+    # === Return payload ===
     return {
         "timestamp": timestamp_utc,
         "timestamp_local": timestamp_wib,
         "network": network_key.capitalize(),
         "tx_hash": tx_hash,
         "contract": tx.get("to") or "",
-        "function_name": function_name,
+        "function_name": function_name,                # <- lowercase, match to_standard_row()
         "block_number": _hex_to_int(tx.get("blockNumber", "0x0")),
         "gas_used": gas_used,
         "gas_price_gwei": gas_price_gwei,
         "cost_eth": cost_eth,
         "cost_idr": cost_idr,
-        "status": status,
+        "status": tx_status,                           # <- variabel ada & jelas
         "from_addr": tx.get("from") or "",
         "to_addr": tx.get("to") or ""
     }
