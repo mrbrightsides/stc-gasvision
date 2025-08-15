@@ -25,24 +25,48 @@ def lookup_4byte(method_id: str, timeout=6) -> str:
     return method_id
 
 # ===== Helper API =====
-def _etherscan_get(base, params, timeout=8):
-    """Call Etherscan-compatible API endpoint."""
-    try:
-        r = requests.get(base, params=params, timeout=timeout)
-        r.raise_for_status()
-        data = r.json()
-        if "error" in data and data["error"]:
-            raise RuntimeError(str(data["error"]))
-        return data
-    except Exception as e:
-        raise RuntimeError(f"Etherscan API error: {e}")
+def _etherscan_get(base: str, params: dict, timeout: int = 10):
+    import requests, json
 
-def _hex_to_int(x):
-    """Convert hex string to integer."""
+    # pastikan URL benar: .../api
+    url = base.rstrip('/') + '/api'
+    r = requests.get(url, params=params, timeout=timeout)
+    r.raise_for_status()
+
+    # paksa parse JSON; kalau gagal, lempar error yang jelas
     try:
-        return int(x, 16)
-    except:
-        return 0
+        data = r.json()
+    except ValueError:
+        txt = r.text[:200]
+        raise RuntimeError(f"Etherscan non-JSON response: {txt}")
+
+    # Etherscan (non-proxy) kadang pakai status/message
+    if isinstance(data, dict) and data.get('status') == '0' and data.get('message') != 'OK':
+        # contoh: rate limit atau invalid key
+        raise RuntimeError(f"Etherscan error: {data.get('message')} | {data.get('result')}")
+
+    return data
+
+def call_proxy(action, params):
+    backoff = 0.35
+    last_err = None
+    for _ in range(3):
+        try:
+            resp = _etherscan_get(base, {"module": "proxy", "action": action, "apikey": api_key, **params})
+            # >>> guard penting ini:
+            if isinstance(resp, str):
+                try:
+                    resp = json.loads(resp)
+                except Exception:
+                    # ada API yang balikin string mentah, biar errornya jelas
+                    snip = resp[:200]
+                    raise RuntimeError(f"Unexpected string from Etherscan: {snip}")
+            return resp
+        except Exception as e:
+            last_err = e
+            time.sleep(backoff)
+            backoff *= 1.6
+    raise RuntimeError(f"Gagal memanggil proxy {action}: {last_err}")
 
 # ===== Kurs ETH → IDR =====
 def fetch_eth_idr_rate(timeout=6):
@@ -81,8 +105,8 @@ def fetch_tx_raw_any(
 ) -> dict:
     network_key = (network or "sepolia").lower().strip()
     base_map = {
-        "sepolia": "https://api-sepolia.etherscan.io/api",
-        "mainnet": "https://api.etherscan.io/api",
+        "sepolia": "https://api-sepolia.etherscan.io",
+        "mainnet": "https://api.etherscan.io",
     }
     if network_key not in base_map:
         raise ValueError(f"Network belum didukung: {network}")
