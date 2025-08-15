@@ -230,17 +230,22 @@ if tx_hash:
         cost_idr_val = (eth_idr_rate or 0) * cost_eth
         rupiah_str = format_rupiah(cost_idr_val)
 
+        gwei = float(raw.get("gas_price_gwei", 0) or 0.0)
+        wei  = int(raw.get("gas_price_wei", 0)  or 0)
+
         c1, c2, c3 = st.columns(3)
         with c1:
             st.metric("Estimated Fee (ETH)", f"{cost_eth:.8f}")
         with c2:
             st.metric("Dalam Rupiah", rupiah_str)
         with c3:
-            st.metric("Gas Price (Gwei)", f"{raw.get('gas_price_gwei', 0):.2f}")
+            st.metric("Gas Price (Gwei)", f"{gwei:.4f}")  # naikkan presisi
 
-        gas_price_wei = int(raw.get("gas_price_wei", 0) or 0)
-        if gas_price_wei == 0:
+        # Badge subsidi
+        if wei == 0:
             st.info("🟢 Gasless / Sponsored Tx — `gasPrice = 0` (biaya gas disubsidi).")
+        elif gwei < 0.001:
+            st.warning(f"🟡 Near-zero gas price ({gwei:.4f} Gwei) — kemungkinan disubsidi/di-sponsor.")
 
         # === Waktu blok (UTC & WIB)
         utc = raw.get("timestamp", "")
