@@ -1,10 +1,10 @@
 import streamlit as st
 import requests
-import pandas as pd
+import re, time, pandas as pd
 from io import StringIO
 from datetime import datetime
 from tools.simulator import TX_PRESETS, GAS_SPEED_PRESET, simulate_fee_table
-from utils.fetchers import fetch_tx_raw, to_standard_row
+from utils.fetchers import fetch_tx_raw, to_standard_row, CHAINIDS, fetch_tx_raw_any
 from web3 import Web3
 
 import streamlit as st
@@ -12,6 +12,7 @@ from utils.fetchers import fetch_eth_idr_rate
 
 @st.cache_data(ttl=600)  # cache selama 10 menit
 def get_eth_idr_rate_cached():
+    from utils.fetchers import fetch_eth_idr_rate
     return fetch_eth_idr_rate()
 
 from utils.fetchers import fetch_tx_raw_any
@@ -31,6 +32,26 @@ def format_rupiah(val: float | None) -> str:
         return "—"
     # kalau >= 1, tampil bulat; kalau < 1, pakai 2 desimal biar tidak jadi 0.00
     return (f"Rp {x:,.0f}" if x >= 1 else f"Rp {x:,.2f}").replace(",", ".")
+
+HASH_RE = re.compile(r"^0x[a-fA-F0-9]{64}$")
+
+def parse_hashes(s: str) -> list[str]:
+    if not s: return []
+    toks = re.split(r"[\s,;]+", s.strip())
+    seen, out = set(), []
+    for t in toks:
+        if HASH_RE.fullmatch(t) and t not in seen:
+            out.append(t); seen.add(t)
+    return out
+
+def format_rupiah_id(val: float, dec_ge1=2, dec_lt1=4):
+    try: x = float(val)
+    except: return "—"
+    dec = dec_ge1 if x >= 1 else dec_lt1
+    s = f"{x:,.{dec}f}"
+    whole, frac = s.split(".")
+    whole = whole.replace(",", ".")
+    return f"Rp {whole},{frac}"
 
 st.set_page_config(
     page_title="STC GasVision",
@@ -270,8 +291,11 @@ if tx_hash:
             "Estimated Fee (ETH)": [row["Estimated Fee (ETH)"]],
             "Estimated Fee (Rp)": [row["Estimated Fee (Rp)"]],
             "Status": [row["Status"]],
+            "Gasless?": "Ya" if (wei == 0 or gwei < 0.001) else "Tidak",
         }
         df_original = pd.DataFrame(data)
+
+        include_addr = st.checkbox("Sertakan alamat wallet di CSV standar", value=False)
 
         # === Download: CSV sesuai detail transaksi
         st.download_button(
@@ -310,6 +334,88 @@ Untuk melihat tren dan pola biaya:
 
 Semakin banyak hash, semakin akurat analisismu. 🚀
 """)
+
+with st.expander("🧰 Mode Multi-Hash / Multi-Chain (Beta)", expanded=False):
+    # pilih jaringan (multi-select)
+    networks_all = list(CHAINIDS.keys())
+    nets = st.multiselect(
+        "Pilih jaringan (bisa lebih dari satu)",
+        options=networks_all,
+        default=["sepolia"]
+    )
+
+    # input banyak hash (pisah koma / baris baru)
+    hashes_raw = st.text_area(
+        "Masukkan banyak Tx Hash (pisah koma atau baris baru)",
+        placeholder="0xabc..., 0xdef...\n0x123...\n0x456...",
+        height=120
+    )
+    hashes = parse_hashes(hashes_raw)
+
+    st.caption(f"Terbaca: **{len(hashes)} hash** di **{len(nets)} chain**")
+    run = st.button(f"Proses ({len(hashes)}×{len(nets)})", use_container_width=True)
+
+    if run:
+        if not hashes or not nets:
+            st.error("Isi minimal satu hash dan pilih minimal satu jaringan.")
+        else:
+            rate = get_eth_idr_rate_cached()
+            total = len(hashes) * len(nets)
+            prog = st.progress(0.0)
+            rows, fails = [], []
+            i = 0
+
+            for net in nets:
+                for h in hashes:
+                    try:
+                        raw = fetch_tx_cached(net, h)
+
+                        # ambil angka utama
+                        gas_used = int(float(raw.get("gas_used", 0) or 0))
+                        gwei     = float(raw.get("gas_price_gwei", 0) or 0.0)
+                        fee_eth  = float(raw.get("cost_eth", 0.0) or 0.0)
+                        fee_idr  = fee_eth * (rate or 0)
+
+                        rows.append({
+                            "Timestamp": raw.get("timestamp",""),
+                            "Network": raw.get("network","").capitalize() or net,
+                            "Tx Hash": h,
+                            "Contract": raw.get("contract",""),
+                            "Function": raw.get("function_name",""),
+                            "Block": int(float(raw.get("block_number",0) or 0)),
+                            "Gas Used": gas_used,
+                            "Gas Price (Gwei)": gwei,
+                            "Estimated Fee (ETH)": fee_eth,
+                            "Estimated Fee (Rp)": fee_idr,
+                            "Status": raw.get("status","Unknown"),
+                            "Gasless?": ("Ya" if float(raw.get("gas_price_gwei",0) or 0) < 0.001 else "Tidak"),
+
+                        })
+                    except Exception as e:
+                        fails.append({"Network": net, "Tx Hash": h, "Error": str(e)})
+
+                    i += 1
+                    prog.progress(i/total)
+                    time.sleep(0.25)  # throttle biar gak ke-rate limit
+
+            # tampilkan hasil
+            if rows:
+                df = pd.DataFrame(rows)
+                st.success(f"Selesai: {len(rows)} baris.")
+                st.dataframe(df, use_container_width=True, height=320)
+
+                csv_bytes = df.to_csv(index=False).encode("utf-8")
+                st.download_button(
+                    "📥 Unduh gabungan (CSV)",
+                    data=csv_bytes,
+                    file_name="stc_gasvision_multi.csv",
+                    mime="text/csv",
+                    use_container_width=True,
+                )
+
+            if fails:
+                st.warning(f"{len(fails)} gagal diproses.")
+                st.dataframe(pd.DataFrame(fails), use_container_width=True, height=200)
 
 # === Separator UI ===
 st.markdown("---")
