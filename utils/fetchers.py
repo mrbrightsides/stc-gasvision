@@ -3,6 +3,29 @@ import requests
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
+# --- helpers: hex <-> int aman ---
+def _hex_to_int(x, default=None):
+    """Terima None/int/str '0x..' atau decimal string; kembalikan int."""
+    if x is None:
+        return default
+    if isinstance(x, int):
+        return x
+    if isinstance(x, str):
+        s = x.strip()
+        if not s:
+            return default
+        try:
+            if s.startswith(("0x", "0X")):
+                return int(s, 16)
+            return int(s, 10)
+        except Exception:
+            return default
+    # tipe lain
+    try:
+        return int(x)
+    except Exception:
+        return default
+
 def lookup_4byte(method_id: str, timeout=6) -> str:
     """Coba tebak nama fungsi dari 4byte.directory; fallback ke method_id."""
     if not method_id:
