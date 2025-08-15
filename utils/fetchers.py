@@ -231,7 +231,7 @@ def fetch_tx_raw_any(
         "network": network_key.capitalize(),
         "tx_hash": tx_hash,
         "contract": tx.get("to") or "",
-        "function_name": function_name or method_id,
+        "function_name": function_name,
         "block_number": _hex_to_int(tx.get("blockNumber", "0x0")),
         "gas_used": gas_used,
         "gas_price_gwei": gas_price_gwei,
