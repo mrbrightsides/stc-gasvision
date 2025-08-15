@@ -18,6 +18,16 @@ def get_eth_idr_rate_cached():
 from utils.fetchers import fetch_tx_raw_any
 import os
 
+# init session_state keys
+if "tx_hash_input" not in st.session_state:
+    st.session_state["tx_hash_input"] = ""
+
+def _clear_single_hash():
+    st.session_state["tx_hash_input"] = ""
+    st.session_state.pop("single_raw", None)
+    st.session_state.pop("single_row", None)
+    st.session_state.pop("df_original", None)
+
 @st.cache_data(ttl=300)
 def fetch_tx_cached(network: str, tx_hash: str):
     API = st.secrets.get("ETHERSCAN_API_KEY") or os.getenv("ETHERSCAN_API_KEY")
@@ -226,16 +236,19 @@ with c_inp:
     st.text_input(
         "Masukkan Tx Hash",
         key="tx_hash_input",
-        placeholder="0x...",
+        placeholder="0x..."
     )
 
 with c_btn:
     st.write("")  # spacer
     clear_disabled = not bool(st.session_state.get("tx_hash_input"))
-    if st.button("🧽 Hapus", key="btn_clear_single", use_container_width=True, disabled=clear_disabled):
-        st.session_state["tx_hash_input"] = ""      # kosongkan input
-        st.session_state.pop("single_raw", None)    # bersihkan hasil lama (opsional)
-        st.rerun()
+    st.button(
+        "🧽 Hapus",
+        key="btn_clear_single",
+        use_container_width=True,
+        disabled=clear_disabled,
+        on_click=_clear_single_hash,
+    )
 
 tx_hash = (st.session_state.get("tx_hash_input") or "").strip()
 
