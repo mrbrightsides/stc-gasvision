@@ -1,9 +1,14 @@
 import os
+import time
+import json
 import requests
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
-# --- helpers: hex <-> int aman ---
+# =========================
+# Helpers
+# =========================
+
 def _hex_to_int(x, default=None):
     """Terima None/int/str '0x..' atau decimal string; kembalikan int."""
     if x is None:
@@ -20,7 +25,6 @@ def _hex_to_int(x, default=None):
             return int(s, 10)
         except Exception:
             return default
-    # tipe lain
     try:
         return int(x)
     except Exception:
@@ -39,7 +43,6 @@ def lookup_4byte(method_id: str, timeout=6) -> str:
         if r.status_code == 200:
             results = r.json().get("results", [])
             if results:
-                # pilih entri terbaru
                 results.sort(key=lambda x: x.get("created_at", ""), reverse=True)
                 sig = results[0].get("text_signature", "")
                 return (sig.split("(")[0] if sig else method_id)
@@ -47,51 +50,54 @@ def lookup_4byte(method_id: str, timeout=6) -> str:
         pass
     return method_id
 
-# ===== Helper API =====
-def _etherscan_get(base: str, params: dict, timeout: int = 10):
-    import requests, json
+# =========================
+# Etherscan v2 (wajib chainid)
+# =========================
 
-    # pastikan URL benar: .../api
-    url = base.rstrip('/') + '/api'
+BASE_V2 = "https://api.etherscan.io"  # v2 host tunggal
+
+CHAINIDS = {
+    "mainnet": 1,
+    "sepolia": 11155111,
+    "base": 8453,
+    "base-sepolia": 84532,
+    "polygon": 137,
+    "polygon-amoy": 80002,
+    "arbitrum": 42161,
+    "arbitrum-sepolia": 421614,
+}
+
+def _etherscan_get_v2(params: dict, timeout: int = 10):
+    """GET ke Etherscan v2, selalu return dict JSON atau raise error jelas."""
+    url = BASE_V2.rstrip("/") + "/v2/api"
     r = requests.get(url, params=params, timeout=timeout)
     r.raise_for_status()
-
-    # paksa parse JSON; kalau gagal, lempar error yang jelas
     try:
         data = r.json()
     except ValueError:
         txt = r.text[:200]
         raise RuntimeError(f"Etherscan non-JSON response: {txt}")
 
-    # Etherscan (non-proxy) kadang pakai status/message
-    if isinstance(data, dict) and data.get('status') == '0' and data.get('message') != 'OK':
-        # contoh: rate limit atau invalid key
+    # v2 kadang tidak pakai status/message untuk proxy; tetap kembalikan data mentah
+    if isinstance(data, dict) and data.get("status") == "0" and data.get("message") != "OK":
         raise RuntimeError(f"Etherscan error: {data.get('message')} | {data.get('result')}")
-
     return data
 
-def call_proxy(action, params):
-    backoff = 0.35
-    last_err = None
-    for _ in range(3):
-        try:
-            resp = _etherscan_get(base, {"module": "proxy", "action": action, "apikey": api_key, **params})
-            # >>> guard penting ini:
-            if isinstance(resp, str):
-                try:
-                    resp = json.loads(resp)
-                except Exception:
-                    # ada API yang balikin string mentah, biar errornya jelas
-                    snip = resp[:200]
-                    raise RuntimeError(f"Unexpected string from Etherscan: {snip}")
-            return resp
-        except Exception as e:
-            last_err = e
-            time.sleep(backoff)
-            backoff *= 1.6
-    raise RuntimeError(f"Gagal memanggil proxy {action}: {last_err}")
+def _take_result_or_fail(resp: dict, label: str):
+    """Ambil field 'result' dari resp. Validasi harus dict."""
+    if not isinstance(resp, dict):
+        raise RuntimeError(f"{label}: response invalid type {type(resp)}")
+    res = resp.get("result", None)
+    if res is None or isinstance(res, str):
+        # tampilkan sedikit konteks agar mudah debug di UI
+        msg = res if isinstance(res, str) else resp
+        raise RuntimeError(f"{label}: invalid result -> {msg}")
+    return res
 
-# ===== Kurs ETH → IDR =====
+# =========================
+# Kurs ETH → IDR
+# =========================
+
 def fetch_eth_idr_rate(timeout=6):
     """Ambil kurs ETH → IDR dari CoinGecko."""
     try:
@@ -102,23 +108,12 @@ def fetch_eth_idr_rate(timeout=6):
         )
         r.raise_for_status()
         return float(r.json()["ethereum"]["idr"])
-    except:
+    except Exception:
         return 0.0
 
-# ===== Ambil transaksi dari Sepolia / jaringan lain =====
-import time
-
-def _take_result_or_fail(resp: dict, label: str):
-    """Ambil field 'result' dari resp. Validasi harus dict."""
-    if not isinstance(resp, dict):
-        raise RuntimeError(f"{label}: response invalid type {type(resp)}")
-    res = resp.get("result", None)
-    # Etherscan kadang kirim string jika rate limit / error di proxy
-    if res is None or isinstance(res, str):
-        # tampilkan sedikit konteks agar mudah debug di UI
-        msg = res if isinstance(res, str) else resp
-        raise RuntimeError(f"{label}: invalid result -> {msg}")
-    return res
+# =========================
+# Fetcher utama
+# =========================
 
 def fetch_tx_raw_any(
     tx_hash: str,
@@ -127,24 +122,33 @@ def fetch_tx_raw_any(
     eth_idr_rate: float | None = None
 ) -> dict:
     network_key = (network or "sepolia").lower().strip()
-    base_map = {
-        "sepolia": "https://api.etherscan.io/v2/api?chainid=84532",
-        "mainnet": "https://api.etherscan.io",
-    }
-    if network_key not in base_map:
+    if network_key not in CHAINIDS:
         raise ValueError(f"Network belum didukung: {network}")
     if not api_key:
         raise RuntimeError("ETHERSCAN_API_KEY belum diset di secrets/env")
 
-    base = base_map[network_key]
+    chainid = CHAINIDS[network_key]
 
-    # --- helper retry ringan untuk proxy endpoints ---
+    # --- helper retry ringan untuk proxy endpoints (v2 butuh chainid) ---
     def call_proxy(action, params):
         backoff = 0.35
         last_err = None
         for _ in range(3):
             try:
-                resp = _etherscan_get(base, {"module": "proxy", "action": action, "apikey": api_key, **params})
+                resp = _etherscan_get_v2({
+                    "module": "proxy",
+                    "action": action,
+                    "chainid": chainid,
+                    "apikey": api_key,
+                    **params,
+                })
+                # guard: kadang API balikin string mentah
+                if isinstance(resp, str):
+                    try:
+                        resp = json.loads(resp)
+                    except Exception:
+                        snip = resp[:200]
+                        raise RuntimeError(f"Unexpected string from Etherscan: {snip}")
                 return resp
             except Exception as e:
                 last_err = e
@@ -175,8 +179,9 @@ def fetch_tx_raw_any(
 
     # === Biaya ===
     gas_used = _hex_to_int(rcpt.get("gasUsed", "0x0"))
-    eff_price = rcpt.get("effectiveGasPrice") or tx.get("gasPrice") or "0x0"
-    gas_price_wei = _hex_to_int(eff_price)
+    # EIP-1559 pakai effectiveGasPrice; fallback legacy gasPrice
+    eff_price_hex = rcpt.get("effectiveGasPrice") or tx.get("gasPrice") or "0x0"
+    gas_price_wei = _hex_to_int(eff_price_hex, 0) or 0
     gas_price_gwei = gas_price_wei / 1e9
     cost_eth = (gas_used * gas_price_wei) / 1e18
 
@@ -220,7 +225,7 @@ def to_standard_row(raw: dict) -> dict:
     def num(x, default=0):
         try:
             return float(x)
-        except:
+        except Exception:
             return default
     return {
         "Timestamp": raw.get("timestamp", ""),
@@ -237,4 +242,3 @@ def to_standard_row(raw: dict) -> dict:
         "Wallet From": raw.get("from_addr", ""),
         "Wallet To": raw.get("to_addr", ""),
     }
-
