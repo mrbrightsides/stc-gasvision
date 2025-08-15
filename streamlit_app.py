@@ -255,6 +255,36 @@ if df_original is not None:
         mime="text/csv"
     )
 
+# Ringkasan biaya (ETH & IDR)
+st.subheader("💰 Ringkasan Biaya")
+col1, col2, col3 = st.columns([1,1,1])
+with col1:
+    st.metric("Estimated Fee (ETH)", f"{row['Estimated Fee (ETH)']:.8f}")
+with col2:
+    st.metric("Dalam Rupiah", f"Rp {row['Estimated Fee (Rp)']:,.2f}")
+with col3:
+    st.metric("Gas Price (Gwei)", f"{row['Gas Price (Gwei)']:.2f}")
+
+# Detail waktu (UTC & WIB)
+utc = raw.get("timestamp", "")
+wib = raw.get("timestamp_local", "")
+if wib:
+    st.caption(f"🕒 Waktu blok — UTC: **{utc}** • WIB: **{wib}**")
+else:
+    st.caption(f"🕒 Waktu blok (UTC): **{utc}**")
+
+# Tampilkan nama fungsi (hasil decode 4byte)
+fn = row.get("Function", "")
+if fn:
+    st.caption(f"🧩 Function: **{fn}**")
+
+with st.expander("ℹ️ Sumber & Catatan"):
+    st.markdown("""
+- Data transaksi: **Etherscan (Sepolia Proxy API)**
+- Kurs ETH → IDR: **CoinGecko**
+- Nama fungsi: **4byte.directory** (fallback ke selector `0x....` bila ABI tidak tersedia)
+""")
+
 # === Separator UI ===
 st.markdown("---")
 st.header("📟 Gas Fee Simulator")
