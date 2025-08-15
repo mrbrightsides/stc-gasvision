@@ -120,7 +120,6 @@ def convert_to_stc_format(df_raw: pd.DataFrame) -> pd.DataFrame:
         'cost_eth':'Estimated Fee (ETH)', 'Estimated Fee (ETH)':'Estimated Fee (ETH)',
         'cost_idr':'Estimated Fee (Rp)', 'Estimated Fee (Rp)':'Estimated Fee (Rp)',
         'status':'Status', 'Status':'Status'
-        'Gasless?': 'Ya' if (wei == 0 or gwei < 0.001) else 'Tidak',
     }
     df.rename(columns={k:v for k,v in rename_map.items() if k in df.columns}, inplace=True)
 
