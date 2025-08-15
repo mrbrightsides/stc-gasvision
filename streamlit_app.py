@@ -22,10 +22,15 @@ def fetch_tx_cached(network: str, tx_hash: str):
     API = st.secrets.get("ETHERSCAN_API_KEY") or os.getenv("ETHERSCAN_API_KEY")
     return fetch_tx_raw_any(tx_hash, API, network=network)
 
-with st.sidebar:
-    if st.button("♻️ Refresh kurs (clear cache)"):
-        get_eth_idr_rate_cached.clear()
-        st.success("Kurs akan di-refresh pada request berikutnya.")
+def format_rupiah(val: float | None) -> str:
+    if val is None:
+        return "—"
+    try:
+        x = float(val)
+    except Exception:
+        return "—"
+    # kalau >= 1, tampil bulat; kalau < 1, pakai 2 desimal biar tidak jadi 0.00
+    return (f"Rp {x:,.0f}" if x >= 1 else f"Rp {x:,.2f}").replace(",", ".")
 
 st.set_page_config(
     page_title="STC GasVision",
@@ -147,6 +152,11 @@ untuk eksplorasi lanjutan biaya transaksi.
 
 Versi UI: v1.0 • Streamlit • Theme Dark
 """)
+
+with st.sidebar:
+    if st.button("♻️ Refresh kurs (clear cache)"):
+        get_eth_idr_rate_cached.clear()
+        st.success("Kurs akan di-refresh pada request berikutnya.")
 
 # === Logo dan Header ===
 LOGO_URL = "https://i.imgur.com/7j5aq4l.png"
