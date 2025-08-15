@@ -63,12 +63,17 @@ def convert_to_stc_format(df_raw):
         'Estimated Fee (Rp)': 'cost_idr'
     }, inplace=True)
 
-    df['gas_price_wei'] = df['Gas Price (Gwei)'] * 1e9 if 'Gas Price (Gwei)' in df.columns else 0
+    if 'Gas Price (Gwei)' in df.columns:
+        df['gas_price_wei'] = df['Gas Price (Gwei)'] * 1e9
+    else:
+        df['gas_price_wei'] = 0
 
     def extract_meta_json(row):
-        return json.dumps({
-            "status": row["Status"] if "Status" in row.index else "Unknown"
-        })
+        try:
+            status = row["Status"]
+        except Exception:
+            status = "Unknown"
+        return json.dumps({"status": status})
 
     df['meta_json'] = df.apply(extract_meta_json, axis=1)
 
