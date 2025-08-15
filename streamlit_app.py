@@ -5,12 +5,7 @@ import pandas as pd
 from io import StringIO
 from datetime import datetime
 from tools.simulator import TX_PRESETS, GAS_SPEED_PRESET, simulate_fee_table
-from utils.fetchers import (
-    fetch_eth_idr_rate,
-    fetch_gas_data,
-    fetch_tx_details,
-    fetch_contract_info
-)
+from utils.fetchers import fetch_tx_raw, to_standard_row
 
 st.set_page_config(
     page_title="STC GasVision",
