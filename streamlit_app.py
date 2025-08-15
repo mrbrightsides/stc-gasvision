@@ -67,7 +67,11 @@ def convert_to_stc_format(df_raw):
     df['gas_price_wei'] = df['Gas Price (Gwei)'] * 1e9
 
     # Meta JSON: simpan 'Status' (misalnya: "Success", "Failed")
-    df['meta_json'] = df['Status'].apply(lambda s: json.dumps({"status": s}))
+    def extract_meta_json(row):
+        status = row.get('Status', 'Unknown')
+        return json.dumps({"status": status})
+
+    df['meta_json'] = df.apply(extract_meta_json, axis=1)
 
     # Ambil hanya kolom yang dibutuhkan
     columns_needed = [
