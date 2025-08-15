@@ -44,9 +44,9 @@ def _clear_multi_networks():
 
 def _fill_demo_hashes():
     st.session_state["multi_hashes"] = "\n".join([
-        "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-        "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "0x41ed4bee1442238abcc81fac4abd40d3fb31ef647865ec8c81301238afd4b3e4",
+        "0x54553269973eb4621924e6393ecac7fa71c4aadd69dbc3ecad92b9b4db7a40e4",
+        "0x4e90e2a3d73af50cc92860fd14431c4ce5c836e62ab825ef51eca4e660e01cac",
     ])
 
 @st.cache_data(ttl=300)
@@ -396,25 +396,12 @@ def parse_hashes(s: str) -> list[str]:
 
 with st.expander("🧰 Mode Multi-Hash / Multi-Chain (Beta)", expanded=False):
 
-    # --- pilih jaringan + tombol clear di sebelahnya ---
-    c_net_a, c_net_b = st.columns([1, 0.22])
-    with c_net_a:
-        st.multiselect(
-            "Pilih jaringan (bisa lebih dari satu)",
-            options=list(CHAINIDS.keys()),
-            key="multi_networks",
-        )
-    with c_net_b:
-        st.write("")  # spacer
-        st.button(
-            "🗑️ Kosongkan jaringan",
-            use_container_width=True,
-            disabled=(len(st.session_state["multi_networks"]) == 0),
-            on_click=_clear_multi_networks,
-            key="btn_clear_nets",
-        )
+    st.multiselect(
+        "Pilih jaringan (bisa lebih dari satu)",
+        options=list(CHAINIDS.keys()),
+        key="multi_networks",
+    )
 
-    # --- textarea hash + tombol aksi di kolom kanan ---
     c_txt, c_actions = st.columns([1, 0.35])
     with c_txt:
         st.text_area(
