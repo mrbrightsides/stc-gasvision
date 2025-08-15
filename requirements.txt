@@ -2,3 +2,4 @@ streamlit
 web3
 requests
 pandas
+tzdata
