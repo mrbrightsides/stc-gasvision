@@ -63,17 +63,15 @@ def convert_to_stc_format(df_raw):
         'Estimated Fee (Rp)': 'cost_idr'
     }, inplace=True)
 
-    # Gas Price dari Gwei ke Wei
-    df['gas_price_wei'] = df['Gas Price (Gwei)'] * 1e9
+    df['gas_price_wei'] = df['Gas Price (Gwei)'] * 1e9 if 'Gas Price (Gwei)' in df.columns else 0
 
-    # Meta JSON: simpan 'Status' (misalnya: "Success", "Failed")
     def extract_meta_json(row):
-        status = row.get('Status', 'Unknown')
-        return json.dumps({"status": status})
+        return json.dumps({
+            "status": row["Status"] if "Status" in row.index else "Unknown"
+        })
 
     df['meta_json'] = df.apply(extract_meta_json, axis=1)
 
-    # Ambil hanya kolom yang dibutuhkan
     columns_needed = [
         'timestamp','network','tx_hash','contract','function_name',
         'block_number','gas_used','gas_price_wei','cost_eth','cost_idr','meta_json'
