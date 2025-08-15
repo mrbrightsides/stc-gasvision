@@ -267,17 +267,6 @@ Untuk melihat tren dan pola biaya:
 Semakin banyak hash, semakin akurat analisismu. 🚀
 """)
 
-# === Export to STC Analytics format
-if df_original is not None:
-    df_converted = convert_to_stc_format(df_original)
-    csv_converted = df_converted.to_csv(index=False).encode('utf-8')
-    st.download_button(
-        label="⬇️ Unduh untuk analisa di STC Analytics",
-        data=csv_converted,
-        file_name="stc_analytics_ready.csv",
-        mime="text/csv"
-    )
-
 # === Separator UI ===
 st.markdown("---")
 st.header("📟 Gas Fee Simulator")
