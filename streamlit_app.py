@@ -28,6 +28,27 @@ def _clear_single_hash():
     st.session_state.pop("single_row", None)
     st.session_state.pop("df_original", None)
 
+# --- session_state init for multi mode ---
+if "multi_hashes" not in st.session_state:
+    st.session_state["multi_hashes"] = ""
+if "multi_networks" not in st.session_state:
+    st.session_state["multi_networks"] = ["sepolia"]
+
+def _clear_multi_hashes():
+    st.session_state["multi_hashes"] = ""
+    st.session_state.pop("multi_rows", None)
+    st.session_state.pop("multi_fails", None)
+
+def _clear_multi_networks():
+    st.session_state["multi_networks"] = []
+
+def _fill_demo_hashes():
+    st.session_state["multi_hashes"] = "\n".join([
+        "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    ])
+
 @st.cache_data(ttl=300)
 def fetch_tx_cached(network: str, tx_hash: str):
     API = st.secrets.get("ETHERSCAN_API_KEY") or os.getenv("ETHERSCAN_API_KEY")
@@ -364,21 +385,48 @@ Semakin banyak hash, semakin akurat analisismu. 🚀
 """)
 
 with st.expander("🧰 Mode Multi-Hash / Multi-Chain (Beta)", expanded=False):
-    # pilih jaringan (multi-select)
-    networks_all = list(CHAINIDS.keys())
-    nets = st.multiselect(
+
+    # --- pilih jaringan ---
+    st.multiselect(
         "Pilih jaringan (bisa lebih dari satu)",
-        options=networks_all,
-        default=["sepolia"]
+        options=list(CHAINIDS.keys()),
+        key="multi_networks"
     )
 
-    # input banyak hash (pisah koma / baris baru)
-    hashes_raw = st.text_area(
-        "Masukkan banyak Tx Hash (pisah koma atau baris baru)",
-        placeholder="0xabc..., 0xdef...\n0x123...\n0x456...",
-        height=120
-    )
-    hashes = parse_hashes(hashes_raw)
+    c_net_a, c_net_b = st.columns([1, 0.22])
+    with c_net_b:
+        st.button(
+            "🗑️ Kosongkan jaringan",
+            use_container_width=True,
+            disabled=(len(st.session_state["multi_networks"]) == 0),
+            on_click=_clear_multi_networks,
+        )
+
+    # --- textarea hash + tombol aksi ---
+    c_txt, c_actions = st.columns([1, 0.35])
+    with c_txt:
+        st.text_area(
+            "Masukkan banyak Tx Hash (pisah koma atau baris baru)",
+            key="multi_hashes",
+            placeholder="0xabc..., 0xdef...\n0x123...",
+            height=120,
+        )
+    with c_actions:
+        st.write("")  # spacer
+        st.button(
+            "🧽 Hapus hash",
+            use_container_width=True,
+            disabled=(len(st.session_state["multi_hashes"].strip()) == 0),
+            on_click=_clear_multi_hashes,
+        )
+        st.button(
+            "🧪 Contoh demo",
+            use_container_width=True,
+            on_click=_fill_demo_hashes,
+        )
+
+    nets = st.session_state["multi_networks"]
+    hashes_raw = st.session_state["multi_hashes"]
 
     st.caption(f"Terbaca: **{len(hashes)} hash** di **{len(nets)} chain**")
     run = st.button(f"Proses ({len(hashes)}×{len(nets)})", use_container_width=True)
