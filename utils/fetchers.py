@@ -59,56 +59,63 @@ def fetch_eth_idr_rate(timeout=6):
         return 0.0
 
 # ===== Ambil transaksi dari Sepolia / jaringan lain =====
+import time
+
+def _take_result_or_fail(resp: dict, label: str):
+    """Ambil field 'result' dari resp. Validasi harus dict."""
+    if not isinstance(resp, dict):
+        raise RuntimeError(f"{label}: response invalid type {type(resp)}")
+    res = resp.get("result", None)
+    # Etherscan kadang kirim string jika rate limit / error di proxy
+    if res is None or isinstance(res, str):
+        # tampilkan sedikit konteks agar mudah debug di UI
+        msg = res if isinstance(res, str) else resp
+        raise RuntimeError(f"{label}: invalid result -> {msg}")
+    return res
+
 def fetch_tx_raw_any(
     tx_hash: str,
     api_key: str,
     network: str = "sepolia",
     eth_idr_rate: float | None = None
 ) -> dict:
-    """Ambil detail transaksi (raw) + biaya dalam ETH & IDR. Tambah WIB & decode function."""
     network_key = (network or "sepolia").lower().strip()
-
     base_map = {
         "sepolia": "https://api-sepolia.etherscan.io/api",
         "mainnet": "https://api.etherscan.io/api",
     }
     if network_key not in base_map:
         raise ValueError(f"Network belum didukung: {network}")
-
     if not api_key:
         raise RuntimeError("ETHERSCAN_API_KEY belum diset di secrets/env")
 
     base = base_map[network_key]
 
+    # --- helper retry ringan untuk proxy endpoints ---
+    def call_proxy(action, params):
+        backoff = 0.35
+        last_err = None
+        for _ in range(3):
+            try:
+                resp = _etherscan_get(base, {"module": "proxy", "action": action, "apikey": api_key, **params})
+                return resp
+            except Exception as e:
+                last_err = e
+                time.sleep(backoff)
+                backoff *= 1.7
+        raise last_err
+
     # --- TX data ---
-    tx_resp = _etherscan_get(base, {
-        "module": "proxy",
-        "action": "eth_getTransactionByHash",
-        "txhash": tx_hash,
-        "apikey": api_key
-    })
-    tx = tx_resp.get("result")
-    if not tx:
-        raise RuntimeError("Transaksi tidak ditemukan")
+    tx_resp = call_proxy("eth_getTransactionByHash", {"txhash": tx_hash.strip()})
+    tx = _take_result_or_fail(tx_resp, "tx")
 
     # --- Receipt ---
-    rcpt_resp = _etherscan_get(base, {
-        "module": "proxy",
-        "action": "eth_getTransactionReceipt",
-        "txhash": tx_hash,
-        "apikey": api_key
-    })
-    rcpt = rcpt_resp.get("result", {})
+    rcpt_resp = call_proxy("eth_getTransactionReceipt", {"txhash": tx_hash.strip()})
+    rcpt = _take_result_or_fail(rcpt_resp, "receipt")
 
     # --- Block (untuk timestamp) ---
-    blk_resp = _etherscan_get(base, {
-        "module": "proxy",
-        "action": "eth_getBlockByNumber",
-        "tag": tx.get("blockNumber", "0x0"),
-        "boolean": "true",
-        "apikey": api_key
-    })
-    blk = blk_resp.get("result", {})
+    blk_resp = call_proxy("eth_getBlockByNumber", {"tag": tx.get("blockNumber", "0x0"), "boolean": "true"})
+    blk = _take_result_or_fail(blk_resp, "block")
 
     # === Waktu: UTC + WIB ===
     ts_unix = _hex_to_int(blk.get("timestamp"))
@@ -138,12 +145,12 @@ def fetch_tx_raw_any(
     status = "Success" if _hex_to_int(rcpt.get("status", "0x0")) == 1 else "Failed"
 
     return {
-        "timestamp": timestamp_utc,             # untuk CSV standar (UTC)
-        "timestamp_local": timestamp_wib,       # untuk UI (WIB)
+        "timestamp": timestamp_utc,
+        "timestamp_local": timestamp_wib,
         "network": network_key.capitalize(),
         "tx_hash": tx_hash,
         "contract": tx.get("to") or "",
-        "function_name": function_name or method_id,  # prefer nama fungsi, fallback selector
+        "function_name": function_name or method_id,
         "block_number": _hex_to_int(tx.get("blockNumber", "0x0")),
         "gas_used": gas_used,
         "gas_price_gwei": gas_price_gwei,
