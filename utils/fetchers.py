@@ -99,7 +99,8 @@ def _take_result_or_fail(resp: dict, label: str):
 # =========================
 
 def fetch_eth_idr_rate(timeout=6):
-    """Ambil kurs ETH → IDR dari CoinGecko."""
+    """Kurs ETH→IDR dengan multi-fallback. Return float > 0 kalau sukses."""
+    # 1) CoinGecko
     try:
         r = requests.get(
             "https://api.coingecko.com/api/v3/simple/price",
@@ -107,9 +108,32 @@ def fetch_eth_idr_rate(timeout=6):
             timeout=timeout
         )
         r.raise_for_status()
-        return float(r.json()["ethereum"]["idr"])
+        v = float(r.json()["ethereum"]["idr"])
+        if v > 0:
+            return v
     except Exception:
-        return 0.0
+        pass
+
+    # 2) Binance ETHUSDT * USD→IDR (exchangerate.host)
+    try:
+        r1 = requests.get("https://api.binance.com/api/v3/ticker/price",
+                          params={"symbol": "ETHUSDT"}, timeout=timeout)
+        r1.raise_for_status()
+        eth_usd = float(r1.json()["price"])
+
+        r2 = requests.get("https://api.exchangerate.host/latest",
+                          params={"base": "USD", "symbols": "IDR"}, timeout=timeout)
+        r2.raise_for_status()
+        usd_idr = float(r2.json()["rates"]["IDR"])
+
+        v = eth_usd * usd_idr
+        if v > 0:
+            return v
+    except Exception:
+        pass
+
+    # 3) gagal semua
+    return 0.0
 
 # =========================
 # Fetcher utama
