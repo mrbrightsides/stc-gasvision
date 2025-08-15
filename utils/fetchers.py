@@ -245,6 +245,7 @@ def fetch_tx_raw_any(
         "function_name": function_name,                # <- lowercase, match to_standard_row()
         "block_number": _hex_to_int(tx.get("blockNumber", "0x0")),
         "gas_used": gas_used,
+        "gas_price_wei": gas_price_wei,
         "gas_price_gwei": gas_price_gwei,
         "cost_eth": cost_eth,
         "cost_idr": cost_idr,
