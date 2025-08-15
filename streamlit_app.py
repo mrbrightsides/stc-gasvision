@@ -300,7 +300,7 @@ if tx_hash:
 
 # === Tips & link
 st.markdown("""
-### 🔍 Tips untuk Analisis Lanjutan
+### 💡 Analisis Lanjutan
 CSV ini hanya satu transaksi.  
 Untuk melihat tren dan pola biaya:
 
