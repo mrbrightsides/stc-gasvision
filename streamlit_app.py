@@ -48,9 +48,14 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # === Konversi format CSV ke format STC Analytics ===
-def convert_to_stc_format(df_raw):
+from datetime import datetime
+import json
+import pandas as pd
+
+def convert_to_stc_format(df_raw: pd.DataFrame) -> pd.DataFrame:
     df = df_raw.copy()
 
+    # --- rename sesuai skema STC Analytics ---
     df.rename(columns={
         'Timestamp': 'timestamp',
         'Network': 'network',
@@ -63,24 +68,38 @@ def convert_to_stc_format(df_raw):
         'Estimated Fee (Rp)': 'cost_idr'
     }, inplace=True)
 
+    # --- tipe data aman ---
     if 'Gas Price (Gwei)' in df.columns:
-        df['gas_price_wei'] = df['Gas Price (Gwei)'] * 1e9
+        df['gas_price_wei'] = pd.to_numeric(df['Gas Price (Gwei)'], errors='coerce').fillna(0) * 1e9
     else:
         df['gas_price_wei'] = 0
 
-    def extract_meta_json(row):
-        try:
-            status = row["Status"]
-        except Exception:
-            status = "Unknown"
-        return json.dumps({"status": status})
+    for col in ['block_number', 'gas_used', 'cost_eth', 'cost_idr']:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
 
-    df['meta_json'] = df.apply(extract_meta_json, axis=1)
+    # --- meta_json: ambil Status kalau ada, paksa ke string & sanitize ---
+    if 'Status' in df_raw.columns:
+        # ke string + ganti nan/None/NaT jadi 'Unknown'
+        status_series = df_raw['Status'].astype(str).replace({'nan': 'Unknown', 'None': 'Unknown', 'NaT': 'Unknown'})
+        def _safe_meta(s: str) -> str:
+            try:
+                return json.dumps({"status": s}, ensure_ascii=False)
+            except Exception:
+                return '{"status":"Unknown"}'
+        df['meta_json'] = status_series.map(_safe_meta)
+    else:
+        df['meta_json'] = ['{"status":"Unknown"}'] * len(df)
 
     columns_needed = [
         'timestamp','network','tx_hash','contract','function_name',
         'block_number','gas_used','gas_price_wei','cost_eth','cost_idr','meta_json'
     ]
+    # Pastikan semua kolom ada
+    for c in columns_needed:
+        if c not in df.columns:
+            df[c] = '' if c in ['timestamp','network','tx_hash','contract','function_name','meta_json'] else 0
+
     return df[columns_needed]
     
 # === Sidebar ===
