@@ -187,7 +187,7 @@ with st.sidebar:
         get_eth_idr_rate_cached.clear()
         st.success("Kurs akan di-refresh pada request berikutnya.")
 
-with st.sidebar.expander("📘 About", expanded=False):
+with st.sidebar.expander("📘 About", expanded=True):
     st.markdown("""
     STC GasVision memantau biaya gas transaksi di berbagai testnet (Sepolia, Goerli,
     Polygon Mumbai, Arbitrum Sepolia) dan mengonversinya ke Rupiah.
@@ -378,8 +378,8 @@ CSV ini hanya satu transaksi.
 Untuk melihat tren dan pola biaya:
 
 - Coba input beberapa hash
-- Gabungkan semua file
-- Upload ke 👉 [**STC Analytics**](https://stc-analytics.streamlit.app)
+- Gunakan Mode Multi Hash / Multi Chain
+- Upload hasilnya ke 👉 [**STC Analytics**](https://stc-analytics.streamlit.app)
 
 Semakin banyak hash, semakin akurat analisismu. 🚀
 """)
