@@ -120,6 +120,7 @@ def convert_to_stc_format(df_raw: pd.DataFrame) -> pd.DataFrame:
         'cost_eth':'Estimated Fee (ETH)', 'Estimated Fee (ETH)':'Estimated Fee (ETH)',
         'cost_idr':'Estimated Fee (Rp)', 'Estimated Fee (Rp)':'Estimated Fee (Rp)',
         'status':'Status', 'Status':'Status'
+        "Gasless?": "Ya" if (wei == 0 or gwei < 0.001) else "Tidak",
     }
     df.rename(columns={k:v for k,v in rename_map.items() if k in df.columns}, inplace=True)
 
@@ -151,8 +152,13 @@ def convert_to_stc_format(df_raw: pd.DataFrame) -> pd.DataFrame:
     return df[COLUMNS_UPPER]
     
 # === Sidebar ===
-st.sidebar.title("ℹ️ About")
-st.sidebar.markdown("""
+with st.sidebar:
+    if st.button("♻️ Refresh kurs (clear cache)"):
+        get_eth_idr_rate_cached.clear()
+        st.success("Kurs akan di-refresh pada request berikutnya.")
+
+with st.sidebar.expander("📘 About", expanded=False):
+st.markdown("""
 STC GasVision memantau biaya gas transaksi di berbagai testnet (Sepolia, Goerli,
 Polygon Mumbai, Arbitrum Sepolia) dan mengonversinya ke Rupiah.
 
@@ -173,11 +179,6 @@ untuk eksplorasi lanjutan biaya transaksi.
 
 Versi UI: v1.0 • Streamlit • Theme Dark
 """)
-
-with st.sidebar:
-    if st.button("♻️ Refresh kurs (clear cache)"):
-        get_eth_idr_rate_cached.clear()
-        st.success("Kurs akan di-refresh pada request berikutnya.")
 
 # === Logo dan Header ===
 LOGO_URL = "https://i.imgur.com/7j5aq4l.png"
@@ -295,7 +296,7 @@ if tx_hash:
         }
         df_original = pd.DataFrame(data)
 
-        include_addr = st.checkbox("Sertakan alamat wallet di CSV standar", value=False)
+        # include_addr = st.checkbox("Sertakan alamat wallet di CSV standar", value=False)
 
         # === Download: CSV sesuai detail transaksi
         st.download_button(
