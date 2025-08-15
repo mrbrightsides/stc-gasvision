@@ -384,25 +384,37 @@ Untuk melihat tren dan pola biaya:
 Semakin banyak hash, semakin akurat analisismu. 🚀
 """)
 
+HASH_RE = re.compile(r"^0x[a-fA-F0-9]{64}$")
+def parse_hashes(s: str) -> list[str]:
+    if not s: return []
+    toks = re.split(r"[\s,;]+", s.strip())
+    seen, out = set(), []
+    for t in toks:
+        if HASH_RE.fullmatch(t) and t not in seen:
+            out.append(t); seen.add(t)
+    return out
+
 with st.expander("🧰 Mode Multi-Hash / Multi-Chain (Beta)", expanded=False):
 
-    # --- pilih jaringan ---
-    st.multiselect(
-        "Pilih jaringan (bisa lebih dari satu)",
-        options=list(CHAINIDS.keys()),
-        key="multi_networks"
-    )
-
+    # --- pilih jaringan + tombol clear di sebelahnya ---
     c_net_a, c_net_b = st.columns([1, 0.22])
+    with c_net_a:
+        st.multiselect(
+            "Pilih jaringan (bisa lebih dari satu)",
+            options=list(CHAINIDS.keys()),
+            key="multi_networks",
+        )
     with c_net_b:
+        st.write("")  # spacer
         st.button(
             "🗑️ Kosongkan jaringan",
             use_container_width=True,
             disabled=(len(st.session_state["multi_networks"]) == 0),
             on_click=_clear_multi_networks,
+            key="btn_clear_nets",
         )
 
-    # --- textarea hash + tombol aksi ---
+    # --- textarea hash + tombol aksi di kolom kanan ---
     c_txt, c_actions = st.columns([1, 0.35])
     with c_txt:
         st.text_area(
@@ -412,86 +424,91 @@ with st.expander("🧰 Mode Multi-Hash / Multi-Chain (Beta)", expanded=False):
             height=120,
         )
     with c_actions:
-        st.write("")  # spacer
+        st.write("")
         st.button(
             "🧽 Hapus hash",
             use_container_width=True,
             disabled=(len(st.session_state["multi_hashes"].strip()) == 0),
             on_click=_clear_multi_hashes,
+            key="btn_clear_multi",
         )
         st.button(
             "🧪 Contoh demo",
             use_container_width=True,
             on_click=_fill_demo_hashes,
+            key="btn_fill_demo",
         )
 
+    # --- ambil nilai & PARSE hashes ---
     nets = st.session_state["multi_networks"]
     hashes_raw = st.session_state["multi_hashes"]
+    hashes = parse_hashes(hashes_raw)  # <— ini yang sebelumnya hilang
 
     st.caption(f"Terbaca: **{len(hashes)} hash** di **{len(nets)} chain**")
-    run = st.button(f"Proses ({len(hashes)}×{len(nets)})", use_container_width=True)
+
+    run = st.button(
+        f"Proses ({len(hashes)}×{len(nets)})",
+        use_container_width=True,
+        key="run_multi",
+        disabled=(len(hashes) == 0 or len(nets) == 0),
+    )
 
     if run:
-        if not hashes or not nets:
-            st.error("Isi minimal satu hash dan pilih minimal satu jaringan.")
-        else:
-            rate = get_eth_idr_rate_cached()
-            total = len(hashes) * len(nets)
-            prog = st.progress(0.0)
-            rows, fails = [], []
-            i = 0
+        rate = get_eth_idr_rate_cached()
+        total = len(hashes) * len(nets)
+        prog = st.progress(0.0)
+        rows, fails = [], []
+        i = 0
 
-            for net in nets:
-                for h in hashes:
-                    try:
-                        raw = fetch_tx_cached(net, h)
+        for net in nets:
+            for h in hashes:
+                try:
+                    raw = fetch_tx_cached(net, h)
 
-                        # ambil angka utama
-                        gas_used = int(float(raw.get("gas_used", 0) or 0))
-                        gwei     = float(raw.get("gas_price_gwei", 0) or 0.0)
-                        fee_eth  = float(raw.get("cost_eth", 0.0) or 0.0)
-                        fee_idr  = fee_eth * (rate or 0)
+                    gas_used = int(float(raw.get("gas_used", 0) or 0))
+                    gwei     = float(raw.get("gas_price_gwei", 0) or 0.0)
+                    fee_eth  = float(raw.get("cost_eth", 0.0) or 0.0)
+                    fee_idr  = fee_eth * (rate or 0)
 
-                        rows.append({
-                            "Timestamp": raw.get("timestamp",""),
-                            "Network": raw.get("network","").capitalize() or net,
-                            "Tx Hash": h,
-                            "Contract": raw.get("contract",""),
-                            "Function": raw.get("function_name",""),
-                            "Block": int(float(raw.get("block_number",0) or 0)),
-                            "Gas Used": gas_used,
-                            "Gas Price (Gwei)": gwei,
-                            "Estimated Fee (ETH)": fee_eth,
-                            "Estimated Fee (Rp)": fee_idr,
-                            "Status": raw.get("status","Unknown"),
-                            "Gasless?": ("Ya" if float(raw.get("gas_price_gwei",0) or 0) < 0.001 else "Tidak"),
+                    rows.append({
+                        "Timestamp": raw.get("timestamp",""),
+                        "Network": raw.get("network","").capitalize() or net,
+                        "Tx Hash": h,
+                        "Contract": raw.get("contract",""),
+                        "Function": raw.get("function_name",""),
+                        "Block": int(float(raw.get("block_number",0) or 0)),
+                        "Gas Used": gas_used,
+                        "Gas Price (Gwei)": gwei,
+                        "Estimated Fee (ETH)": fee_eth,
+                        "Estimated Fee (Rp)": fee_idr,
+                        "Status": raw.get("status","Unknown"),
+                        "Gasless?": ("Ya" if float(raw.get("gas_price_gwei",0) or 0) < 0.001 else "Tidak"),
+                    })
+                except Exception as e:
+                    fails.append({"Network": net, "Tx Hash": h, "Error": str(e)})
 
-                        })
-                    except Exception as e:
-                        fails.append({"Network": net, "Tx Hash": h, "Error": str(e)})
+                i += 1
+                prog.progress(i / total)
+                time.sleep(0.25)  # throttle biar gak ke-rate limit
 
-                    i += 1
-                    prog.progress(i/total)
-                    time.sleep(0.25)  # throttle biar gak ke-rate limit
+        if rows:
+            df = pd.DataFrame(rows)
+            st.success(f"Selesai: {len(rows)} baris.")
+            st.dataframe(df, use_container_width=True, height=320)
 
-            # tampilkan hasil
-            if rows:
-                df = pd.DataFrame(rows)
-                st.success(f"Selesai: {len(rows)} baris.")
-                st.dataframe(df, use_container_width=True, height=320)
+            csv_bytes = df.to_csv(index=False).encode("utf-8")
+            st.download_button(
+                "📥 Unduh gabungan (CSV)",
+                data=csv_bytes,
+                file_name="stc_gasvision_multi.csv",
+                mime="text/csv",
+                use_container_width=True,
+                key="dl_multi_csv",
+            )
 
-                csv_bytes = df.to_csv(index=False).encode("utf-8")
-                st.download_button(
-                    "📥 Unduh gabungan (CSV)",
-                    data=csv_bytes,
-                    file_name="stc_gasvision_multi.csv",
-                    mime="text/csv",
-                    use_container_width=True,
-                )
-
-            if fails:
-                st.warning(f"{len(fails)} gagal diproses.")
-                st.dataframe(pd.DataFrame(fails), use_container_width=True, height=200)
+        if fails:
+            st.warning(f"{len(fails)} gagal diproses.")
+            st.dataframe(pd.DataFrame(fails), use_container_width=True, height=200)
 
 # === Separator UI ===
 st.markdown("---")
