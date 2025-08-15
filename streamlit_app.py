@@ -48,38 +48,31 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-from datetime import datetime
-import json
-
+# === Konversi format CSV ke format STC Analytics ===
 def convert_to_stc_format(df_raw):
     df = df_raw.copy()
 
-    # Konversi langsung
+    df['timestamp'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    df['contract'] = df.get('To', '')
+    df['function_name'] = 'manual-entry'
+    df['block_number'] = df['Block']
+    df['gas_price_wei'] = df['Gas Price (Gwei)'] * 1e9
+    df['cost_eth'] = df['Estimated Fee (ETH)']
+    df['cost_idr'] = df['Estimated Fee (Rp)']
+    df['meta_json'] = '{}'
+
     df.rename(columns={
-        'Timestamp': 'timestamp',
         'Network': 'network',
         'Tx Hash': 'tx_hash',
-        'Contract': 'contract',
-        'Function': 'function_name',
-        'Block': 'block_number',
-        'Gas Used': 'gas_used',
-        'Estimated Fee (ETH)': 'cost_eth',
-        'Estimated Fee (Rp)': 'cost_idr'
+        'Gas Used': 'gas_used'
     }, inplace=True)
 
-    # Gas Price dari Gwei ke Wei
-    df['gas_price_wei'] = df['Gas Price (Gwei)'] * 1e9
-
-    # Meta JSON: simpan 'Status' (misalnya: "Success", "Failed")
-    df['meta_json'] = df['Status'].apply(lambda s: json.dumps({"status": s}))
-
-    # Ambil hanya kolom yang dibutuhkan
     columns_needed = [
         'timestamp','network','tx_hash','contract','function_name',
         'block_number','gas_used','gas_price_wei','cost_eth','cost_idr','meta_json'
     ]
     return df[columns_needed]
-
+    
 # === Sidebar ===
 st.sidebar.title("ℹ️ About")
 st.sidebar.markdown("""
