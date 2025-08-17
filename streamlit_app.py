@@ -182,13 +182,14 @@ def convert_to_stc_format(df_raw: pd.DataFrame) -> pd.DataFrame:
     return df[COLUMNS_UPPER]
     
 # === Sidebar ===
+# === Sidebar ===
 with st.sidebar:
     if st.button("♻️ Refresh kurs (clear cache)"):
         get_eth_idr_rate_cached.clear()
         st.success("Kurs akan di-refresh pada request berikutnya.")
 
-    st.sidebar.markdown("📘 About"):
-    st.markdown("""
+    st.sidebar.markdown("📘 **About**")
+    st.sidebar.markdown("""
     STC GasVision memantau biaya gas transaksi di berbagai testnet (Sepolia, Goerli,
     Polygon Mumbai, Arbitrum Sepolia) dan mengonversinya ke Rupiah.
 
@@ -202,7 +203,6 @@ with st.sidebar:
     untuk eksplorasi lanjutan biaya transaksi.
 
     ---
-
     #### 🙌 Dukungan & kontributor
     - ⭐ **Star / Fork**: [GitHub repo](https://github.com/mrbrightsides/stc-gasvision/tree/main)
     - Built with 💙 by [ELPEEF](https://elpeef.com)
