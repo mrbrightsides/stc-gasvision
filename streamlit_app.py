@@ -242,12 +242,6 @@ def get_eth_to_idr():
 ETH_TO_IDR = get_eth_to_idr()
 st.write(f"💱 Kurs saat ini (ETH to IDR): Rp {ETH_TO_IDR:,}")
 
-st.markdown("""
-🔎 **Tips**: Masukkan hash transaksi dari testnet explorer seperti
-[GoerliScan](https://goerli.etherscan.io), [SepoliaScan](https://sepolia.etherscan.io),
-atau [PolygonScan](https://mumbai.polygonscan.com) untuk melihat estimasi biaya gas.
-""")
-
 # --- SINGLE HASH (satu input + tombol hapus) ---
 c_inp, c_btn = st.columns([1, 0.18])
 
@@ -268,6 +262,12 @@ with c_btn:
         disabled=clear_disabled,
         on_click=_clear_single_hash,
     )
+
+st.markdown("""
+🔎 **Tips**: Masukkan hash transaksi dari testnet explorer seperti
+[GoerliScan](https://goerli.etherscan.io), [SepoliaScan](https://sepolia.etherscan.io),
+atau [PolygonScan](https://mumbai.polygonscan.com) untuk melihat estimasi biaya gas.
+""")
 
 tx_hash = (st.session_state.get("tx_hash_input") or "").strip()
 
