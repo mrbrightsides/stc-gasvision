@@ -182,33 +182,29 @@ def convert_to_stc_format(df_raw: pd.DataFrame) -> pd.DataFrame:
     return df[COLUMNS_UPPER]
     
 # === Sidebar ===
-with st.sidebar:
-    if st.button("♻️ Refresh kurs (clear cache)"):
-        get_eth_idr_rate_cached.clear()
-        st.success("Kurs akan di-refresh pada request berikutnya.")
+from textwrap import dedent
 
 with st.sidebar.expander("📘 About", expanded=True):
-    st.markdown("""
-    STC GasVision memantau biaya gas transaksi di berbagai testnet (Sepolia, Goerli,
-    Polygon Mumbai, Arbitrum Sepolia) dan mengonversinya ke Rupiah.
+    st.markdown(dedent("""
+STC GasVision memantau biaya gas transaksi di berbagai testnet (Sepolia, Goerli,
+Polygon Mumbai, Arbitrum Sepolia) dan mengonversinya ke Rupiah.
 
-    **Sumber data**
-    - 🔌 Realtime data jaringan: **Infura RPC**
-    - 💱 Kurs ETH → IDR via **Infura**, dengan fallback ke provider lain
-    - 🧠 Kurs dicache ±10 menit
-    - 📥 Export CSV untuk analisis
+**Sumber data**
+- 🔌 Realtime data jaringan: **Infura RPC**
+- 💱 Kurs ETH → IDR via **Infura**, dengan fallback ke provider lain
+- 🧠 Kurs dicache ±10 menit
+- 📥 Export CSV untuk analisis
 
-    🧾 Upload hasil CSV ke [**STC Analytics**](https://stc-analytics.streamlit.app)
-    untuk eksplorasi lanjutan biaya transaksi.
+🧾 Upload hasil CSV ke [**STC Analytics**](https://stc-analytics.streamlit.app) untuk eksplorasi lanjutan biaya transaksi.
 
-    ---
+---
 
-    #### 🙌 Dukungan & kontributor
-    - ⭐ **Star / Fork**: [GitHub repo](https://github.com/mrbrightsides/stc-gasvision/tree/main)
-    - Built with 💙 by [ELPEEF](https://elpeef.com)
+#### 🙌 Dukungan & kontributor
+- ⭐ **Star / Fork**: [GitHub repo](https://github.com/mrbrightsides/stc-gasvision/tree/main)
+- Built with 💙 by [ELPEEF](https://elpeef.com)
 
-    Versi UI: v1.0 • Streamlit • Theme Dark
-    """)
+Versi UI: v1.0 • Streamlit • Theme Dark
+    """))
 
 # === Logo dan Header ===
 LOGO_URL = "https://i.imgur.com/7j5aq4l.png"
