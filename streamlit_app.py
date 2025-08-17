@@ -90,7 +90,6 @@ st.set_page_config(
     layout="wide"
 )
 
-# Pasang style global dulu (boleh di mana saja, asal sebelum sidebar muncul)
 st.markdown("""
     <style>
     section[data-testid="stSidebar"] {
@@ -119,36 +118,32 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Kemudian sidebar content
 with st.sidebar:
     if st.button("♻️ Refresh kurs (clear cache)"):
         get_eth_idr_rate_cached.clear()
         st.success("Kurs akan di-refresh pada request berikutnya.")
 
-    # Tambahkan container buatan agar markup tetap dalam satu div styled
-    st.markdown("""
-    <div>
-        <h4>📘 About</h4>
-        STC GasVision memantau biaya gas transaksi di berbagai testnet (Sepolia, Goerli,
-        Polygon Mumbai, Arbitrum Sepolia) dan mengonversinya ke Rupiah.
+    st.sidebar.markdown("📘 **About**")
+    st.sidebar.markdown("""
+    STC GasVision memantau biaya gas transaksi di berbagai testnet (Sepolia, Goerli,
+    Polygon Mumbai, Arbitrum Sepolia) dan mengonversinya ke Rupiah.
 
-        <strong>Sumber data</strong>
-        <ul>
-            <li>🔌 Realtime data jaringan: <strong>Infura RPC</strong></li>
-            <li>💱 Kurs ETH → IDR via <strong>Infura</strong>, dengan fallback ke provider lain</li>
-            <li>🧠 Kurs dicache ±10 menit</li>
-            <li>📥 Export CSV untuk analisis</li>
-        </ul>
+    **Sumber data**
+    - 🔌 Realtime data jaringan: **Infura RPC**
+    - 💱 Kurs ETH → IDR via **Infura**, dengan fallback ke provider lain
+    - 🧠 Kurs dicache ±10 menit
+    - 📥 Export CSV untuk analisis
 
-        🧾 Upload hasil CSV ke <a href="https://stc-analytics.streamlit.app" target="_blank"><strong>STC Analytics</strong></a> untuk eksplorasi lanjutan biaya transaksi.
-        <hr>
-        <h5>🙌 Dukungan & kontributor</h5>
-        ⭐ <strong>Star / Fork</strong>: <a href="https://github.com/mrbrightsides/stc-gasvision/tree/main" target="_blank">GitHub repo</a><br>
-        Built with 💙 by <a href="https://elpeef.com" target="_blank">ELPEEF</a>
-        <br><br>
-        <small>Versi UI: v1.0 • Streamlit • Theme Dark</small>
-    </div>
-    """, unsafe_allow_html=True)
+    🧾 Upload hasil CSV ke [**STC Analytics**](https://stc-analytics.streamlit.app)
+    untuk eksplorasi lanjutan biaya transaksi.
+
+    ---
+    #### 🙌 Dukungan & kontributor
+    - ⭐ **Star / Fork**: [GitHub repo](https://github.com/mrbrightsides/stc-gasvision/tree/main)
+    - Built with 💙 by [ELPEEF](https://elpeef.com)
+
+    Versi UI: v1.0 • Streamlit • Theme Dark
+    """)
 
 # === Konversi format CSV ke format STC Analytics ===
 import pandas as pd
