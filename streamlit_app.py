@@ -187,7 +187,7 @@ with st.sidebar:
         get_eth_idr_rate_cached.clear()
         st.success("Kurs akan di-refresh pada request berikutnya.")
 
-st.sidebar.markdown("📘 About", expanded=True):
+    st.sidebar.markdown("📘 About"):
     st.markdown("""
     STC GasVision memantau biaya gas transaksi di berbagai testnet (Sepolia, Goerli,
     Polygon Mumbai, Arbitrum Sepolia) dan mengonversinya ke Rupiah.
