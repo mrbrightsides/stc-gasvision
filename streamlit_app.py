@@ -181,8 +181,6 @@ def convert_to_stc_format(df_raw: pd.DataFrame) -> pd.DataFrame:
 
     return df[COLUMNS_UPPER]
     
-# === Sidebar ===
-# === Sidebar ===
 with st.sidebar:
     if st.button("♻️ Refresh kurs (clear cache)"):
         get_eth_idr_rate_cached.clear()
