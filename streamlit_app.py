@@ -90,17 +90,15 @@ st.set_page_config(
     layout="wide"
 )
 
+# Pasang style global dulu (boleh di mana saja, asal sebelum sidebar muncul)
 st.markdown("""
     <style>
-    /* === DARK MODE SIDEBAR === */
     section[data-testid="stSidebar"] {
         background-color: #111111;
         padding: 1.5rem;
         color: white;
         border-right: 1px solid #333;
     }
-
-    /* === Box/frame styling like STC Analytics === */
     section[data-testid="stSidebar"] > div {
         background-color: #1a1a1a;
         padding: 16px;
@@ -108,22 +106,49 @@ st.markdown("""
         border: 1px solid #333333;
         box-shadow: 0 0 10px rgba(0,0,0,0.3);
     }
-
-    /* === Sidebar text and links === */
     section[data-testid="stSidebar"] * {
         color: white !important;
     }
-
     section[data-testid="stSidebar"] a {
         color: #1abfff !important;
         text-decoration: none;
     }
-
     section[data-testid="stSidebar"] a:hover {
         text-decoration: underline;
     }
     </style>
 """, unsafe_allow_html=True)
+
+# Kemudian sidebar content
+with st.sidebar:
+    if st.button("♻️ Refresh kurs (clear cache)"):
+        get_eth_idr_rate_cached.clear()
+        st.success("Kurs akan di-refresh pada request berikutnya.")
+
+    # Tambahkan container buatan agar markup tetap dalam satu div styled
+    st.markdown("""
+    <div>
+        <h4>📘 About</h4>
+        STC GasVision memantau biaya gas transaksi di berbagai testnet (Sepolia, Goerli,
+        Polygon Mumbai, Arbitrum Sepolia) dan mengonversinya ke Rupiah.
+
+        <strong>Sumber data</strong>
+        <ul>
+            <li>🔌 Realtime data jaringan: <strong>Infura RPC</strong></li>
+            <li>💱 Kurs ETH → IDR via <strong>Infura</strong>, dengan fallback ke provider lain</li>
+            <li>🧠 Kurs dicache ±10 menit</li>
+            <li>📥 Export CSV untuk analisis</li>
+        </ul>
+
+        🧾 Upload hasil CSV ke <a href="https://stc-analytics.streamlit.app" target="_blank"><strong>STC Analytics</strong></a> untuk eksplorasi lanjutan biaya transaksi.
+        <hr>
+        <h5>🙌 Dukungan & kontributor</h5>
+        ⭐ <strong>Star / Fork</strong>: <a href="https://github.com/mrbrightsides/stc-gasvision/tree/main" target="_blank">GitHub repo</a><br>
+        Built with 💙 by <a href="https://elpeef.com" target="_blank">ELPEEF</a>
+        <br><br>
+        <small>Versi UI: v1.0 • Streamlit • Theme Dark</small>
+    </div>
+    """, unsafe_allow_html=True)
 
 # === Konversi format CSV ke format STC Analytics ===
 import pandas as pd
@@ -181,33 +206,6 @@ def convert_to_stc_format(df_raw: pd.DataFrame) -> pd.DataFrame:
 
     return df[COLUMNS_UPPER]
     
-with st.sidebar:
-    if st.button("♻️ Refresh kurs (clear cache)"):
-        get_eth_idr_rate_cached.clear()
-        st.success("Kurs akan di-refresh pada request berikutnya.")
-
-    st.sidebar.markdown("📘 **About**")
-    st.sidebar.markdown("""
-    STC GasVision memantau biaya gas transaksi di berbagai testnet (Sepolia, Goerli,
-    Polygon Mumbai, Arbitrum Sepolia) dan mengonversinya ke Rupiah.
-
-    **Sumber data**
-    - 🔌 Realtime data jaringan: **Infura RPC**
-    - 💱 Kurs ETH → IDR via **Infura**, dengan fallback ke provider lain
-    - 🧠 Kurs dicache ±10 menit
-    - 📥 Export CSV untuk analisis
-
-    🧾 Upload hasil CSV ke [**STC Analytics**](https://stc-analytics.streamlit.app)
-    untuk eksplorasi lanjutan biaya transaksi.
-
-    ---
-    #### 🙌 Dukungan & kontributor
-    - ⭐ **Star / Fork**: [GitHub repo](https://github.com/mrbrightsides/stc-gasvision/tree/main)
-    - Built with 💙 by [ELPEEF](https://elpeef.com)
-
-    Versi UI: v1.0 • Streamlit • Theme Dark
-    """)
-
 # === Logo dan Header ===
 LOGO_URL = "https://i.imgur.com/7j5aq4l.png"
 col1, col2 = st.columns([1, 4])
