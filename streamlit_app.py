@@ -91,31 +91,25 @@ st.set_page_config(
 )
 
 st.markdown("""
-    <style>
-    section[data-testid="stSidebar"] {
-        background-color: #111111;
-        padding: 1.5rem;
-        color: white;
-        border-right: 1px solid #333;
-    }
-    section[data-testid="stSidebar"] > div {
-        background-color: #1a1a1a;
-        padding: 16px;
-        border-radius: 8px;
-        border: 1px solid #333333;
-        box-shadow: 0 0 10px rgba(0,0,0,0.3);
-    }
-    section[data-testid="stSidebar"] * {
-        color: white !important;
-    }
-    section[data-testid="stSidebar"] a {
-        color: #1abfff !important;
-        text-decoration: none;
-    }
-    section[data-testid="stSidebar"] a:hover {
-        text-decoration: underline;
-    }
-    </style>
+<style>
+:root { --accent:#20c997; --accent2:#7c4dff; }
+.block-container { padding-top: 1rem; }
+section[data-testid="stSidebar"] .st-expander { border:1px solid #313131; border-radius:12px; }
+div[data-testid="stMetric"]{
+  background: linear-gradient(135deg, rgba(32,201,151,.08), rgba(124,77,255,.06));
+  border: 1px solid rgba(128,128,128,.15);
+  padding: 12px; border-radius: 12px;
+}
+.stButton>button, .stDownloadButton>button{
+  border-radius:10px; border:1px solid rgba(255,255,255,.15);
+}
+.stTabs [data-baseweb="tab-list"] { gap: 6px; }
+.stTabs [data-baseweb="tab"]{
+  background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08);
+  border-radius: 10px; padding: 6px 12px;
+}
+[data-testid="stHeader"] { background: transparent; }
+</style>
 """, unsafe_allow_html=True)
 
 with st.sidebar:
