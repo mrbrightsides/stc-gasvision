@@ -224,6 +224,9 @@ RPC_URLS = {
     "Arbitrum Sepolia": "https://arbitrum-sepolia.infura.io/v3/f8d248f838ec4f12b0f01efd2b238206"
 }
 
+# === Input Tx Hash ===
+st.title("⛽ Gas Usage Tracker")
+
 network = st.selectbox("🧭 Pilih Jaringan Testnet", list(RPC_URLS.keys()))
 web3 = Web3(Web3.HTTPProvider(RPC_URLS[network]))
 
@@ -238,9 +241,6 @@ def get_eth_to_idr():
 
 ETH_TO_IDR = get_eth_to_idr()
 st.write(f"💱 Kurs saat ini (ETH to IDR): Rp {ETH_TO_IDR:,}")
-
-# === Input Tx Hash ===
-st.title("⛽ Gas Usage Tracker")
 
 st.markdown("""
 🔎 **Tips**: Masukkan hash transaksi dari testnet explorer seperti
