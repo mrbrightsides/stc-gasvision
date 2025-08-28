@@ -1,4 +1,4 @@
-# 🔥 GasVision by SmartWisataChain
+# 🔥 GasVision by SmartTourismChain
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.16763535.svg)](https://doi.org/10.5281/zenodo.16763535)
 [![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://stc-gasvision.streamlit.app/)
