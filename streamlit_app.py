@@ -18,6 +18,9 @@ def get_eth_idr_rate_cached():
 from utils.fetchers import fetch_tx_raw_any
 import os
 
+if st.query_params.get("ping") == "1":
+    st.write("ok"); st.stop()
+
 # init session_state keys
 if "tx_hash_input" not in st.session_state:
     st.session_state["tx_hash_input"] = ""
