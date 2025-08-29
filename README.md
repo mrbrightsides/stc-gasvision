@@ -42,6 +42,14 @@ flowchart TD
     D -->|Ekspor CSV| F[STC Analytics]
 ```
 
+```mermaid
+flowchart LR
+  RPC["RPC / Explorer"] --> GV["STC GasVision"]
+  GV --> CUR["Kurs & Konversi"]
+  GV --> HEAT["Tren / Heatmap"]
+  GV --> LOG["Logs / Metrics"]
+```
+
 ---
 
 ## 📦 Instalasi Lokal
