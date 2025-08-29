@@ -2,8 +2,8 @@ name: Keep Alive Streamlit
 
 on:
   schedule:
-    - cron: "*/20 * * * *"   # tiap 20 menit (UTC)
-  workflow_dispatch:          # bisa run manual dari tab Actions
+    - cron: "*/20 * * * *"     # tiap 20 menit (UTC)
+  workflow_dispatch:
 
 jobs:
   ping:
@@ -13,8 +13,11 @@ jobs:
         run: |
           URL="https://stc-gasvision.streamlit.app/?utm=keepalive"
           UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36"
+          # coba 2x; toleransi redirect loop; jangan bikin job fail
           for i in 1 2; do
-            CODE=$(curl -sS -o /dev/null -w "%{http_code}" -L -A "$UA" "$URL")
+            CODE=$(curl -sS -o /dev/null -w "%{http_code}" -A "$UA" --max-redirs 10 -L "$URL" || echo "ERR")
             echo "Hit #$i -> HTTP $CODE"
-            sleep 10
+            sleep 8
           done
+          # Jangan fail walau curl non-zero
+          exit 0
