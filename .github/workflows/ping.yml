@@ -1,23 +1,50 @@
-name: Keep Alive Streamlit
+name: Keep Alive Streamlit (Browser)
 
 on:
   schedule:
-    - cron: "*/20 * * * *"     # tiap 20 menit (UTC)
+    - cron: "*/30 * * * *"
   workflow_dispatch:
 
 jobs:
-  ping:
+  wake:
     runs-on: ubuntu-latest
     steps:
-      - name: Curl app (wake ping)
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Puppeteer
         run: |
-          URL="https://stc-gasvision.streamlit.app/?utm=keepalive"
-          UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36"
-          # coba 2x; toleransi redirect loop; jangan bikin job fail
-          for i in 1 2; do
-            CODE=$(curl -sS -o /dev/null -w "%{http_code}" -A "$UA" --max-redirs 10 -L "$URL" || echo "ERR")
-            echo "Hit #$i -> HTTP $CODE"
-            sleep 8
-          done
-          # Jangan fail walau curl non-zero
-          exit 0
+          npm init -y
+          npm i puppeteer
+
+      - name: Wake Streamlit
+        env:
+          TARGET_URL: https://stc-gasvision.streamlit.app
+        run: |
+          node - <<'NODE'
+          const puppeteer = require('puppeteer');
+
+          (async () => {
+            const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox','--disable-setuid-sandbox'] });
+            const page = await browser.newPage();
+            await page.setUserAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36');
+
+            await page.goto(process.env.TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
+
+            // Coba klik tombol “wake”
+            const [btn] = await page.$x("//button[contains(., 'get this app back up') or contains(., 'back up')]");
+            if (btn) {
+              await btn.click();
+              await page.waitForTimeout(8000);
+              console.log('Clicked wake button.');
+            } else {
+              console.log('Wake button not found, page may already be up.');
+            }
+
+            // Tunggu widget Streamlit render (elemen .stApp)
+            await page.waitForSelector('.stApp', { timeout: 15000 }).catch(() => {});
+            console.log('Wake ping done.');
+            await browser.close();
+          })().catch(e => { console.error(e); process.exit(0); });
+          NODE
