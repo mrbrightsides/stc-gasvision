@@ -383,7 +383,7 @@ def parse_hashes(s: str) -> list[str]:
             out.append(t); seen.add(t)
     return out
 
-with st.expander("🧰 Mode Multi-Hash / Multi-Chain (Beta)", expanded=False):
+with st.expander("🧰 Mode Multi-Hash / Multi-Chain", expanded=False):
 
     st.multiselect(
         "Pilih jaringan (bisa lebih dari satu)",
